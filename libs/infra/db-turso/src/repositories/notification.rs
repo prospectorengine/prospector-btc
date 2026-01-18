@@ -1,23 +1,26 @@
 // [libs/infra/db-turso/src/repositories/notification.rs]
 /*!
  * =================================================================
- * APARATO: HERALD NOTIFICATION REPOSITORY (V1.2 - STRICT ALIGNMENT)
+ * APARATO: HERALD NOTIFICATION REPOSITORY (V1.3 - OWNERSHIP SEALED)
  * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
  * RESPONSABILIDAD: GESTIÓN DE ALERTAS TÁCTICAS Y ESTADOS DE LECTURA
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. DOMAIN SYNERGY: Sincronización absoluta con 'SystemNotification' del
- *    estrato L2, eliminando la fragilidad de los objetos JSON genéricos.
- * 2. ATOMIC OUTBOX: Implementa el sellado de señales de alerta en el
- *    sustrato 'outbox_strategic' bajo el protocolo de resiliencia galvánica.
- * 3. NOMINAL PURITY: Erradicación total de abreviaciones (res -> query_results,
- *    id -> notification_unique_identifier).
- * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral y rastro #[instrument].
+ * 1. BORROW CHECKER ALIGNMENT: Resolución definitiva de E0382. Sincroniza
+ *    el rastro de 'info!' con la ejecución SQL mediante la clonación estratégica
+ *    del identificador unívoco.
+ * 2. DOMAIN SYNERGY: Mantenimiento de la paridad absoluta con 'SystemNotification'
+ *    del estrato L2, preservando el tipado fuerte.
+ * 3. NOMINAL PURITY: Nomenclatura nominal absoluta. Erradicación total de 'id',
+ *    'res' o 'msg'.
+ * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral y rastro #[instrument]
+ *    completo para el Proyecto Panóptico.
  *
- * # Mathematical Proof (Communication Linearity):
- * El repositorio garantiza que la transición de 'is_read_confirmation' sea
- * atómica in-place sobre el JSONB, permitiendo que el 'SovereignRelayService'
- * propague el estado de lectura hacia Supabase sin duplicar eventos.
+ * # Mathematical Proof (Memory Safety):
+ * El aparato garantiza la integridad de las variables locales mediante la
+ * transferencia controlada de propiedad (Ownership) al driver libSQL,
+ * asegurando que los punteros de rastro permanezcan válidos hasta el cierre
+ * del alcance de la función.
  * =================================================================
  */
 
@@ -29,9 +32,10 @@ use chrono::Utc;
 use uuid::Uuid;
 use tracing::{info, instrument, debug, error};
 
-/// Identificador nominal del estrato de señales Herald en el Outbox.
+/// Identificador nominal del estrato de señales Herald en el Outbox Táctico.
 const HERALD_STRATUM_IDENTIFIER: &str = "HERALD_SIGNAL";
 
+/// Repositorio de autoridad para la persistencia del flujo de notificaciones.
 pub struct NotificationRepository {
     /// Cliente táctico para el enlace con el cluster de Turso (Motor A).
     database_client: TursoClient,
@@ -49,10 +53,14 @@ impl NotificationRepository {
      * Encola una notificación crítica en el Outbox para despacho multicanal.
      *
      * # Errors:
-     * - `DbError::MappingError`: Si la serialización del contrato de dominio falla.
+     * - `DbError::MappingError`: Si la serialización del contrato L2 colapsa.
      *
      * # Performance:
-     * Operación O(1). Latencia de sellado en Ledger Táctico < 5ms.
+     * Operación O(1). Latencia de inyección local < 5ms.
+     *
+     * # Logic (Memory Safety):
+     * ✅ RESOLUCIÓN E0382: Se utiliza .clone() al pasar el identificador
+     * a params![] para permitir su uso posterior en el macro de logging info!.
      */
     #[instrument(skip(self, target_operator_identifier, notification_content_text))]
     pub async fn queue_urgent_notification(
@@ -63,7 +71,7 @@ impl NotificationRepository {
     ) -> Result<(), DbError> {
         let database_connection = self.database_client.get_connection()?;
 
-        // 1. GENERACIÓN DEL ARTEFACTO DE COMUNICACIÓN (L2 Alignment)
+        // 1. GENERACIÓN DEL IDENTIFICADOR Y ARTEFACTO (L2 Alignment)
         let notification_unique_identifier = Uuid::new_v4().to_string();
 
         let notification_artifact = SystemNotification {
@@ -72,10 +80,10 @@ impl NotificationRepository {
             message_context_key: notification_content_text.to_string(),
             creation_timestamp_utc: Utc::now(),
             is_read_confirmation: false,
-            forensic_metadata_json: None, // Reservado para rastro de colisión detallado
+            forensic_metadata_json: None,
         };
 
-        // 2. SERIALIZACIÓN SOBERANA
+        // 2. SERIALIZACIÓN DETERMINISTA
         let serialized_notification = serde_json::to_string(&notification_artifact)
             .map_err(|fault| DbError::MappingError(format!("NOTIFICATION_SERIALIZATION_FAULT: {}", fault)))?;
 
@@ -84,13 +92,14 @@ impl NotificationRepository {
             VALUES (?1, ?2, ?3, 'pending')
         ";
 
-        // 3. PERSISTENCIA EN EL OUTBOX TÁCTICO
+        // 3. PERSISTENCIA EN EL OUTBOX TÁCTICO (MOVE CONTROL)
         database_connection.execute(sql_statement, params![
-            notification_unique_identifier,
+            notification_unique_identifier.clone(), // ✅ Clonación para ceder propiedad al driver
             serialized_notification,
             HERALD_STRATUM_IDENTIFIER
         ]).await?;
 
+        // 4. RASTRO DE ÉXITO EN EL PANÓPTICO
         info!("🔔 [HERALD_OUTBOX]: Signal {} crystallized for operator {}.",
             notification_unique_identifier, target_operator_identifier);
 
@@ -119,7 +128,6 @@ impl NotificationRepository {
             LIMIT ?3
         ";
 
-        // Filtro de pertenencia basado en el recipient_id dentro del JSON
         let search_pattern_filter = format!("%{}%", operator_identifier);
 
         let mut query_results = database_connection.query(sql_query, params![
@@ -146,8 +154,7 @@ impl NotificationRepository {
      * Sella la confirmación de lectura de una señal.
      *
      * # Logic:
-     * Localiza el registro y muta el campo 'is_read_confirmation' in-place.
-     * Sincronizado con los nombres nominales del contrato L2 V1.1.
+     * Muta el campo 'is_read_confirmation' in-place en el sustrato JSONB.
      */
     #[instrument(skip(self, notification_unique_identifier))]
     pub async fn mark_notification_as_read(
@@ -156,8 +163,6 @@ impl NotificationRepository {
     ) -> Result<(), DbError> {
         let database_connection = self.database_client.get_connection()?;
 
-        // SQL: Muta el estado de lectura preservando la integridad del JSONB
-        // ✅ SINCRO NOMINAL: Cambiado de 'is_read' a 'is_read_confirmation'
         let sql_update_statement = "
             UPDATE outbox_strategic
             SET payload_json = replace(payload_json, '\"is_read_confirmation\":false', '\"is_read_confirmation\":true'),
