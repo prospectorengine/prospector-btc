@@ -1,0 +1,31 @@
+// INICIO DEL ARCHIVO [libs/infra/supabase/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@prospector/api-contracts": ["../../domain/api-contracts/src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    /* ✅ FIX: Inclusión explícita para pacificar al parser de ESLint */
+    "jest.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../../domain/api-contracts" }
+  ]
+}
+// FIN DEL ARCHIVO [libs/infra/supabase/tsconfig.json]

@@ -1,0 +1,13 @@
+// INICIO DEL ARCHIVO [libs/features/telemetry-ui/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/libs/features/telemetry-ui",
+    "rootDir": ".",
+    "declaration": true,
+    "types": ["node"],
+    "composite": true
+  },
+  "exclude": ["**/*.spec.ts", "**/*.spec.tsx", "jest.config.ts"]
+}
+// FIN DEL ARCHIVO [libs/features/telemetry-ui/tsconfig.lib.json]

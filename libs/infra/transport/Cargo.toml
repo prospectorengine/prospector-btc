@@ -1,0 +1,44 @@
+# [libs/infra/transport/Cargo.toml]
+[package]
+name = "prospector-infra-transport"
+version = "0.2.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor de transporte binario de alto rendimiento utilizando Bincode 3.0 para comunicación entre estratos."
+
+[dependencies]
+# --- SERIALIZACIÓN ZENITH ---
+# Configurado para ráfagas de datos en Little-Endian (Zero-Copy compatible)
+serde = { workspace = true }
+bincode = { workspace = true }
+
+# --- GESTIÓN DE ERRORES SINTÁCTICOS ---
+# Nivelado a Thiserror 2.0
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para auditar la paridad binaria y reportar al Dashboard
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_infra_transport"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE TRANSPORTE (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Integridad de Serialización
+# Certifica que el layout binario de Bincode 3.0 es estable entre hilos.
+[[test]]
+name = "serialization_integrity"
+path = "../../../tests/mirror/libs/infra/transport/serialization_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El motor de transporte implementa límites estrictos de tamaño de
+# paquete (10MB) para prevenir ataques de denegación de servicio
+# (DoS) por agotamiento de memoria durante la deserialización.
+# =================================================================

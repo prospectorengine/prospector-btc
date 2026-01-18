@@ -1,0 +1,2 @@
+Física del Desacoplamiento:
+En un servidor de alto rendimiento, la tarea que maneja el socket (el "Nervio Aferente") debe ser sagrada y dedicarse exclusivamente a mover bytes. Al introducir el Internal Tactical Worker, transformamos el mando de una operación Bloqueante-Secuencial a una Asíncrona-Encolada. Esto garantiza que si el CommandRouter necesita realizar una transacción pesada en Turso, el Dashboard Zenith seguirá recibiendo telemetría visual sin micro-congelamientos.

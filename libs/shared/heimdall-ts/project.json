@@ -1,0 +1,25 @@
+{
+  "name": "heimdall-ts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/heimdall-ts/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/heimdall-ts",
+        "main": "libs/shared/heimdall-ts/src/index.ts",
+        "tsConfig": "libs/shared/heimdall-ts/tsconfig.lib.json",
+        "assets": ["libs/shared/heimdall-ts/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["libs/shared/heimdall-ts/**/*.ts"]
+      }
+    }
+  },
+  "tags": ["layer:shared", "type:util"]
+}

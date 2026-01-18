@@ -1,0 +1,39 @@
+version: "1"
+services:
+  # =================================================================
+  # APARATO: ORCHESTRATOR SERVICE (SOLO BACKEND)
+  # RESPONSABILIDAD: RENDER SOLO GESTIONA EL NÚCLEO RUST
+  # =================================================================
+  - type: web
+    name: prospector-orchestrator
+    runtime: docker
+    dockerfilePath: apps/orchestrator/Dockerfile
+    autoDeploy: false # 🛑 CONTROL MANUAL DE COSTOS
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: RUST_LOG
+        value: info
+      # VARIABLES CRÍTICAS (SYNC: FALSE PARA INYECCIÓN MANUAL EN DASHBOARD)
+      - key: DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: WORKER_AUTH_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GITHUB_PAT
+        sync: false
+      - key: GITHUB_OWNER
+        sync: false
+      - key: GITHUB_REPO
+        sync: false
+      - key: FILTER_BASE_URL
+        sync: false
+      - key: FILTER_SHARDS
+        sync: false
+    healthCheckPath: /health
+    plan: free

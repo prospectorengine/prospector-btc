@@ -1,0 +1,21 @@
+// INICIO DEL ARCHIVO [tools/scripts/tsconfig.json]
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noEmit": true,
+    "rootDir": "../../",
+    "outDir": "../../dist/out-tsc/tools/scripts"
+  },
+  "include": ["**/*.ts"]
+}
+// FIN DEL ARCHIVO [tools/scripts/tsconfig.json]

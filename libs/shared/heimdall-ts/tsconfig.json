@@ -1,0 +1,23 @@
+// INICIO DEL ARCHIVO [libs/shared/heimdall-ts/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2020",
+    // ✅ FIX: Asegurar DOM aquí también por si acaso
+    "lib": ["es2020", "dom"],
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "outDir": "../../../dist/out-tsc/libs/shared/heimdall-ts",
+    "tsBuildInfoFile": "../../../dist/out-tsc/libs/shared/heimdall-ts.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts",
+    "jest.config.ts"
+  ],
+  "exclude": ["**/*.spec.ts"]
+}
+// FIN DEL ARCHIVO [libs/shared/heimdall-ts/tsconfig.json]

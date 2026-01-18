@@ -1,0 +1,2 @@
+Física del Cierre de Bucle:
+El sistema evoluciona de un modelo de "Disparo y Olvido" (Fire-and-Forget) a uno de "Acción y Reconocimiento". Al inyectar el endpoint de reporte en el Prover de Rust, eliminamos la necesidad de que el operador humano verifique manualmente los logs de GitHub. La verdad matemática ahora viaja por el túnel de red y se materializa automáticamente en el Ledger de QA del Orquestador, disparando una notificación SSE instantánea al Dashboard Zenith.

@@ -1,0 +1,87 @@
+# [libs/core/probabilistic/Cargo.toml]
+[package]
+name = "prospector-core-probabilistic"
+version = "0.3.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Estructuras probabilísticas particionadas para auditoría masiva O(1) con persistencia Bincode 3.0 y soporte de mapeo de memoria."
+
+[dependencies]
+# --- NÚCLEO DE SERIALIZACIÓN Y ESTRATO DE DATOS ---
+# Sincronizados con el Workspace L0 para garantizar paridad binaria
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+bincode = { workspace = true }
+
+# --- MOTOR PROBABILÍSTICO SOBERANO ---
+# Configurado con Serde para persistencia en disco/nube
+bloomfilter = { version = "1.0.16", features = ["serde"] }
+siphasher = "1.0"
+
+# --- MÚSCULO DE CÓMPUTO Y MEMORIA VIRTUAL ---
+# Habilita el procesamiento paralelo en la carga/guardado de shards
+rayon = { workspace = true }
+# CRÍTICO: Permite el mapeo Zero-Copy del censo UTXO para Google Colab
+memmap2 = "0.9"
+
+# --- CRIPTOGRAFÍA DE INTEGRIDAD (NUEVO) ---
+# ✅ REPARACIÓN: Requerido para el cálculo de firmas de estrato en el ShardedFilter
+sha2 = { workspace = true }
+# ✅ REPARACIÓN: Requerido para decodificación técnica en validaciones de censo
+bs58 = { workspace = true }
+
+# --- GESTIÓN DE ERRORES Y OBSERVABILIDAD ---
+# Nivelado a Zenith V2026 para triaje programático
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+rand = { workspace = true }
+reqwest = { workspace = true, features = ["blocking", "json"] }
+chrono = { workspace = true }
+tempfile = "3.24"
+
+[lib]
+name = "prospector_core_probabilistic"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN PROBABILÍSTICA (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Fiabilidad y Tasa de Falsos Positivos (FPR)
+[[test]]
+name = "sharded_bloom_reliability"
+path = "../../../tests/mirror/libs/core/probabilistic/sharded_bloom_reliability.test.rs"
+
+# 2. Integridad de Serialización V24
+[[test]]
+name = "filter_integrity_v24"
+path = "../../../tests/mirror/libs/core/probabilistic/filter_integrity_v24.test.rs"
+
+# 3. Integridad de Serialización V30 (MMAP Aware)
+[[test]]
+name = "filter_integrity_v30"
+path = "../../../tests/mirror/libs/core/probabilistic/filter_integrity_v30.test.rs"
+
+# 4. Cámara de Tortura V31 (NUEVO - RECUPERADO)
+# ✅ Certifica límites de saturación y paridad bit-perfecta.
+[[test]]
+name = "filter_v31_torture"
+path = "../../../tests/mirror/libs/core/probabilistic/filter_v31_torture.test.rs"
+
+# 5. Stress de Fragmentación V37 (NUEVO - RECUPERADO)
+# ✅ Certifica el ruteo determinista entre 4 shards paralelos.
+[[test]]
+name = "sharded_v37_stress"
+path = "../../../tests/mirror/libs/core/probabilistic/sharded_v37_stress.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Esta nivelación inyecta 'sha2' y 'serde_json' directamente en L1
+# para permitir que el ShardedFilter selle su propio manifiesto
+# de integridad sin depender de utilidades externas, manteniendo
+# la autonomía del núcleo matemático.
+# =================================================================

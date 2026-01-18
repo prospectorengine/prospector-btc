@@ -1,0 +1,19 @@
+// INICIO DEL ARCHIVO [libs/features/telemetry-ui/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "strict": true,
+    "baseUrl": ".",
+    /* ✅ FIX: Eliminado rootDir si existía implícitamente o explícitamente */
+    "paths": {
+      "@prospector/api-contracts": ["../../domain/api-contracts/src/index.ts"],
+      "@prospector/ui-kit": ["../../shared/ui-kit/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.config.ts"],
+  "references": [
+    { "path": "../../domain/api-contracts" }
+  ]
+}
+// FIN DEL ARCHIVO [libs/features/telemetry-ui/tsconfig.json]

@@ -1,0 +1,35 @@
+{
+  "name": "prospector-census-taker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/census-taker/src",
+  "targets": {
+    "build": {
+      "executor": "@monodon/rust:build",
+      "outputs": ["{options.target-dir}"],
+      "options": {
+        "target-dir": "dist/target/apps/census-taker",
+        "release": true
+      }
+    },
+    "run": {
+      "executor": "@monodon/rust:run",
+      "options": {
+        "target-dir": "dist/target/apps/census-taker"
+      }
+    },
+    "lint": {
+      "executor": "@monodon/rust:lint",
+      "options": {
+        "target-dir": "dist/target/apps/census-taker"
+      }
+    },
+    "test": {
+      "executor": "@monodon/rust:test",
+      "options": {
+        "target-dir": "dist/target/apps/census-taker"
+      }
+    }
+  },
+  "tags": ["type:app-etl", "layer:app"]
+}

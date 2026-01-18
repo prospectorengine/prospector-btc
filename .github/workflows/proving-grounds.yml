@@ -1,0 +1,99 @@
+# =================================================================
+# APARATO: INTEGRITY PROVING GROUNDS (V2.0 - ANTI-FLOOD)
+# CLASIFICACIÓN: OPS STRATUM (L6)
+# RESPONSABILIDAD: CERTIFICACIÓN BAJO DEMANDA (MANUAL/PR)
+# =================================================================
+
+name: "Hydra-Zero: Integrity Proving Grounds"
+
+# ✅ ESTRATEGIA DE DISPARO SOBERANA
+on:
+  workflow_dispatch: # Botón Manual
+    inputs:
+      profile:
+        description: 'Compilación Profile'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+        - release
+        - debug
+      target_scope:
+        description: 'Alcance de la Auditoría'
+        required: true
+        default: 'workspace'
+        type: choice
+        options:
+        - workspace
+        - core-math
+        - strategy
+        - orchestrator
+
+  # ✅ GATEKEEPER: Solo se activa en PRs, no en cada commit a main
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'apps/**'
+      - 'libs/**'
+      - 'Cargo.toml'
+
+# ✅ ESCUDO DE CONCURRENCIA (KILL-SWITCH AUTOMÁTICO)
+# Si lanzas este test 2 veces seguidas, el primero se cancela para ahorrar recursos.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+  # Optimización de caché de compilación
+  RUSTC_WRAPPER: ""
+
+jobs:
+  audit-matrix:
+    name: 🛡️ Stratum Certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25 # Límite duro para evitar zombies
+
+    steps:
+      - name: 📥 Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: ⚡ Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: 📦 Install System Libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      # --- FASE 1: NÚCLEO MATEMÁTICO (L1) ---
+      - name: 🧮 [L1] Core Math Integrity
+        if: ${{ inputs.target_scope == 'workspace' || inputs.target_scope == 'core-math' || github.event_name == 'pull_request' }}
+        run: |
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-core-math
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-core-probabilistic
+
+      # --- FASE 2: ESTRATEGIA Y ARQUEOLOGÍA (L2) ---
+      - name: 🧠 [L2] Strategic Engines
+        if: ${{ inputs.target_scope == 'workspace' || inputs.target_scope == 'strategy' || github.event_name == 'pull_request' }}
+        run: |
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-domain-forensics
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-domain-strategy
+
+      # --- FASE 3: INFRAESTRUCTURA (L3/L4) ---
+      - name: 🛰️ [L3] Orchestrator & Phoenix
+        if: ${{ inputs.target_scope == 'workspace' || inputs.target_scope == 'orchestrator' || github.event_name == 'pull_request' }}
+        run: |
+          # Validación del Protocolo de Auto-Regeneración
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-orchestrator --test identity_refresh_test
+          cargo test --profile ${{ inputs.profile || 'debug' }} --package prospector-orchestrator --test governance_api_test
+
+      - name: 🏁 Certification Seal
+        if: success()
+        run: echo "✅ SYSTEM INTEGRITY VERIFIED."

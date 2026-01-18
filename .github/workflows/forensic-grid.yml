@@ -1,0 +1,88 @@
+# =================================================================
+# APARATO: PHANTOM SWARM GRID (V2.0 - OBSERVABLE)
+# CLASIFICACIÓN: OPS INFRASTRUCTURE (ESTRATO L6)
+# RESPONSABILIDAD: EJECUCIÓN PARALELA DE AUDITORÍA FORENSE
+#
+# VISION HIPER-HOLÍSTICA:
+# Utiliza la infraestructura de GitHub Actions como una supercomputadora
+# distribuida. No requiere navegador ni cookies, ya que ejecuta el
+# binario Rust nativo compilado estáticamente (MUSL).
+# =================================================================
+
+name: "Satoshi-XP Forensic Grid"
+
+on:
+  # Disparo manual para operaciones tácticas
+  workflow_dispatch:
+    inputs:
+      grid_size:
+        description: 'Capacidad del Enjambre (Solo informativo, matriz fija)'
+        required: true
+        default: '20 Units'
+
+  # Ejecución automática cronometrada para auditoría continua
+  # Cada 4 horas para maximizar el uso del Free Tier sin saturación
+  schedule:
+    - cron: '0 */4 * * *'
+
+jobs:
+  forensic-node:
+    name: "Unit-XP"
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Fail-Fast desactivado: Si un nodo falla, los otros 19 siguen trabajando.
+      fail-fast: false
+      matrix:
+        # Despliegue de 20 unidades paralelas.
+        # Esto genera 20 máquinas virtuales independientes simultáneamente.
+        node_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+
+    steps:
+      - name: 🛡️ Checkout Core Repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Hydrate Static Binary (Miner Worker)
+        run: |
+          echo "Initiating download of sovereign binary artifact..."
+          # Descarga el binario MUSL desde la URL inyectada en Secretos
+          curl -L -o miner-worker ${{ secrets.MINER_BINARY_URL }}
+
+          # Otorga permisos de ejecución al kernel
+          chmod +x miner-worker
+
+          # Verificación de integridad física
+          ls -lh miner-worker
+          echo "Binary hydration complete. Permissions verified."
+
+      - name: 🚀 Ignite Forensic Kernel
+        env:
+          # --- ENLACE TÁCTICO C2 ---
+          ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+
+          # --- IDENTIDAD DEL NODO ---
+          # Genera un ID único para trazabilidad en el Dashboard L5
+          WORKER_NODE_IDENTIFIER: "gh-actions-forensic-unit-${{ matrix.node_id }}"
+
+          # --- AFINIDAD DE HARDWARE ---
+          # Los runners de GitHub tienen 2 vCPUs. Limitamos los hilos para evitar
+          # sobrecarga del planificador del SO y maximizar el Hashrate neto.
+          RAYON_NUM_THREADS: 2
+
+          # --- OBSERVABILIDAD AUMENTADA ---
+          # 'info' para el sistema general, 'debug' para ver la minería en tiempo real.
+          # Esto soluciona el problema del "Silencio de Radio".
+          RUST_LOG: "info,prospector_miner=debug"
+
+        run: |
+          echo "=========================================="
+          echo "🔥 IGNITION SEQUENCE STARTED"
+          echo "UNIT ID: $WORKER_NODE_IDENTIFIER"
+          echo "TARGET: $ORCHESTRATOR_URL"
+          echo "LOG LEVEL: $RUST_LOG"
+          echo "=========================================="
+
+          # Ejecución del binario. El proceso se mantendrá vivo solicitando misiones
+          # hasta que se agote el tiempo del runner (6 horas) o se cancele.
+          ./miner-worker

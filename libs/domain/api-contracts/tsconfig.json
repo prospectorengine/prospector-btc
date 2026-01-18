@@ -1,0 +1,22 @@
+// INICIO DEL ARCHIVO [libs/domain/api-contracts/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": ["esnext"],
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    /*
+       Alineación con tsconfig.lib.json para evitar conflictos de cálculo de rutas
+       en tiempo de compilación IDE.
+    */
+    "rootDir": ".",
+    "outDir": "../../../dist/out-tsc/libs/domain/api-contracts"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "jest.config.ts", "src/**/*.spec.ts"]
+}
+// FIN DEL ARCHIVO [libs/domain/api-contracts/tsconfig.json]

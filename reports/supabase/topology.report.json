@@ -1,0 +1,10 @@
+{
+  "apparatus": "topology_inspector",
+  "inspected_at": "2026-01-12T12:31:14.944Z",
+  "strata_health": {
+    "profiles": "NOMINAL",
+    "archived_audit_reports": "NOMINAL",
+    "system_integrity_reports": "DEGRADED"
+  },
+  "rpc_bridge_status": "ONLINE"
+}

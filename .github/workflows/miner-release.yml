@@ -1,0 +1,71 @@
+name: Hydra Binary Forge
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Etiqueta del Release (ej: v110.13-hydra)'
+        required: true
+        default: 'v110.13-hydra'
+
+env:
+  BINARY_NAME: miner-worker
+  TARGET_TRIPLE: x86_64-unknown-linux-musl
+
+jobs:
+  forge-and-release:
+    name: 🔨 Forge & Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # CRÍTICO: Permite crear Releases
+
+    steps:
+      - name: 📥 Checkout Source
+        uses: actions/checkout@v4
+
+      - name: 🦀 Install Rust Nightly (Elite SIMD Support)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: ${{ env.TARGET_TRIPLE }}
+
+      - name: 🏗️ Install Musl Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: ⚡ Compile Static Binary
+        run: |
+          # Compilación estática para máxima portabilidad (Colab/Alpine/Ubuntu)
+          cargo build --release --bin ${{ env.BINARY_NAME }} --target ${{ env.TARGET_TRIPLE }}
+
+      - name: 🪶 Optimize Binary (Strip)
+        run: |
+          # Reducción de tamaño: Elimina símbolos de depuración (50MB -> 5MB)
+          strip target/${{ env.TARGET_TRIPLE }}/release/${{ env.BINARY_NAME }}
+
+          # Verificación de integridad
+          file target/${{ env.TARGET_TRIPLE }}/release/${{ env.BINARY_NAME }}
+          ls -lh target/${{ env.TARGET_TRIPLE }}/release/${{ env.BINARY_NAME }}
+
+      - name: 📦 Prepare Artifacts
+        run: |
+          mkdir -p dist
+          cp target/${{ env.TARGET_TRIPLE }}/release/${{ env.BINARY_NAME }} dist/
+
+          # Generar Checksum para validación forense
+          cd dist
+          sha256sum ${{ env.BINARY_NAME }} > ${{ env.BINARY_NAME }}.sha256
+
+      - name: 🚀 Publish to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          name: "Hydra Release ${{ github.event.inputs.tag_name }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/${{ env.BINARY_NAME }}
+            dist/${{ env.BINARY_NAME }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

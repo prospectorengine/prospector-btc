@@ -1,0 +1,50 @@
+# [libs/domain/forensics/Cargo.toml]
+[package]
+name = "prospector-domain-forensics"
+version = "0.3.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Módulo de Arqueología Digital: Reconstrucción determinista de patrones de entropía defectuosa históricos (Debian/Android)."
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA ---
+# Hereda la infraestructura matemática nivelada
+prospector-core-math = { workspace = true }
+
+# --- MOTORES DE RECONSTRUCCIÓN ---
+# Utilizado para el manejo preciso de Endianness en PIDs y Semillas
+byteorder = "1.5"
+
+# --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
+# Permite el rastreo de la reconstrucción en el Panóptico
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para el reporte forense automático al Dashboard
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+hex = { workspace = true }
+
+[lib]
+name = "prospector_domain_forensics"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN FORENSE (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Arqueología Debian 2008 (CVE-2008-0166)
+# Certifica la reconstrucción del espacio finito de 32,767 PIDs.
+[[test]]
+name = "debian_integrity_test"
+path = "../../../tests/mirror/libs/domain/forensics/debian_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Este aparato implementa iteradores puros (Zero-Alloc) para
+# simular el comportamiento de generadores vulnerables, permitiendo
+# que el enjambre audite el pasado con eficiencia de 2026.
+# =================================================================

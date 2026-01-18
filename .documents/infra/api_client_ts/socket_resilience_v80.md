@@ -1,0 +1,2 @@
+Física del Enlace Binario:
+La transición de console.debug a Heimdall no es solo estética: permite que los errores de red en el navegador del operador viajen por el túnel de telemetría y se registren en el Motor C (NoSQL), permitiendo al arquitecto detectar patrones de desconexión masiva en tiempo real. La exportación nominal en el barril garantiza que el compilador de TypeScript pueda realizar un seguimiento estático de todas las referencias, eliminando los fallos de "módulo no encontrado" durante el despliegue a Vercel.

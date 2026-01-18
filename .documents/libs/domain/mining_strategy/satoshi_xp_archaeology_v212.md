@@ -1,0 +1,4 @@
+Ubicación: .documents/libs/domain/mining_strategy/satoshi_xp_archaeology_v212.md
+Física del Aparato: Este motor replica el comportamiento del cliente Bitcoin v0.1.0 corriendo sobre Windows XP. La vulnerabilidad reside en que RandAddSeed saturaba el pool de OpenSSL con 250KB de datos del sistema, donde la única variable de alta entropía era el contador QPC de 64 bits.
+Determinismo Abisales: El test certifica que, dado el mismo "ADN" (Snapshot de memoria de XP) y el mismo valor de QPC, el sistema produce siempre la misma clave privada de Bitcoin. Esto permite que el enjambre se reparta segundos de "Uptime" histórico sin solapamientos.
+Mecánica de Mezcla: Se valida la simulación de SHA1_Update y SHA1_Final operando sobre un buffer circular de 1024 bytes, replicando exactamente el código de la librería ssleay32.dll de 2009.

@@ -1,0 +1,17 @@
+// INICIO DEL ARCHIVO [libs/core/client-vault/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/libs/core/client-vault",
+    "rootDir": ".",
+    "declaration": true,
+    "types": ["node"],
+    "composite": true
+  },
+  "exclude": [
+    "jest.config.ts",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}
+// FIN DEL ARCHIVO [libs/core/client-vault/tsconfig.lib.json]

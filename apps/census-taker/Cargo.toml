@@ -1,0 +1,86 @@
+# [apps/census-taker/Cargo.toml]
+[package]
+name = "prospector-census-taker"
+version = "0.4.1"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "El Cartógrafo: ETL de alto rendimiento para el procesado y fragmentación binaria del censo UTXO de Bitcoin con aceleración Para-Hash."
+license = "MIT"
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
+# Hereda la infraestructura probabilística y los modelos nivelados del núcleo L1/L2
+prospector-core-probabilistic = { workspace = true }
+prospector-domain-models = { workspace = true }
+
+# --- MÚSCULO DE CÓMPUTO PARALELO (NIVELACIÓN SOBERANA) ---
+# Implementación de Rayon para maximizar el Hashrate de decodificación Base58
+rayon = { workspace = true }
+
+# --- OBSERVABILIDAD E INSTRUMENTACIÓN PANÓPTICA ---
+# Nivelado a Zenith V2026 para el rastro de ingesta en el Dashboard L5
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+
+# --- CRIPTOGRAFÍA Y TRATAMIENTO DE ESTRATOS ---
+sha2 = { workspace = true }
+# Sincronizado vía workspace para evitar conflictos de .into() en el stack
+bs58 = { workspace = true, features = ["check"] }
+csv = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+hex = { workspace = true }
+
+# --- INTERFAZ DE MANDO Y CONTROL C2 ---
+# Nivelado a V4.5 para argumentos de línea de comandos de grado industrial
+clap = { workspace = true, features = ["derive"] }
+# Motor de telemetría visual para el operador
+indicatif = "0.17"
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS (TESTING) ---
+# Nivelado para auditar la integridad de los fragmentos generados
+reqwest = { workspace = true, features = ["blocking", "json"] }
+chrono = { workspace = true }
+tempfile = { workspace = true }
+
+[lib]
+# ✅ SINCRO SOBERANA: Define la unidad lógica para exposición de API interna
+name = "prospector_census_lib"
+path = "src/lib.rs"
+
+[[bin]]
+# ✅ SINCRO SOBERANA: Define el punto de entrada ejecutable para el CLI
+name = "census-taker"
+path = "src/main.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DEL CARTÓGRAFO (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Particionamiento (Forensic Partitioner)
+# Certifica que los registros se segmentan correctamente por Era (Satoshi/Legacy).
+[[test]]
+name = "partitioner_integrity_test"
+path = "src/partitioner.rs"
+
+# 2. Validación de Pipeline de Ingesta (End-to-End ETL)
+# Verifica la cadena completa: CSV -> Decode -> Bloom -> Shard.
+[[test]]
+name = "pipeline_verification_test"
+path = "src/pipeline.rs"
+
+# 3. Certificación de ADN Sintético (XP Gold Master)
+# Valida la generación determinista del buffer de 250KB para la tesis doctoral.
+[[test]]
+name = "forensic_generator_test"
+path = "src/forensic_generator.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Esta nivelación sella la falla 'os error 2' al preparar el terreno
+# para la inyección física de src/lib.rs. Se ha sincronizado 'tempfile'
+# con el workspace para evitar duplicidad de versiones en el grafo.
+# =================================================================

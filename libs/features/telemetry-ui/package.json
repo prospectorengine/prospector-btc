@@ -1,0 +1,12 @@
+{
+  "name": "@prospector/ui-telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "react": "^19.0.0",
+    "lucide-react": "^0.462.0",
+    "@prospector/api-contracts": "workspace:*"
+  }
+}

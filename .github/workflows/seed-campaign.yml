@@ -1,0 +1,29 @@
+name: "Ops: Seed Forensic Campaign"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛡️ Checkout Core
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📥 Install Dependencies (Workspace Root)
+        run: |
+          npm install -g pnpm
+          # ✅ FIX: El flag -w es MANDATORIO en monorepos para instalaciones root
+          pnpm add -D -w uuid @libsql/client dotenv chalk tsx
+
+      - name: 🧬 Inject Campaign Data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          npx tsx tools/scripts/seed-forensic-campaign.ts

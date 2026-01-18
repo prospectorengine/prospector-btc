@@ -1,0 +1,28 @@
+// INICIO DEL ARCHIVO [libs/domain/api-contracts/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /*
+      🛡️ PROTOCOLO DE SALIDA SOBERANA
+      Forzamos la emisión de artefactos a la carpeta dist global.
+      Esto previene la contaminación de la carpeta src/.
+    */
+    "outDir": "../../../dist/out-tsc/libs/domain/api-contracts",
+
+    /*
+      🔓 SOBERANÍA ESTRUCTURAL
+      Cambiamos "src" por "." para permitir que la librería incluya
+      archivos de configuración (package.json, etc.) si es necesario,
+      eliminando el error de "Celda Restrictiva".
+    */
+    "rootDir": ".",
+
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+}
+// FIN DEL ARCHIVO [libs/domain/api-contracts/tsconfig.lib.json]

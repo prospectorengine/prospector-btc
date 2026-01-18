@@ -1,0 +1,45 @@
+# [libs/domain/models-rs/Cargo.toml]
+[package]
+name = "prospector-domain-models"
+version = "0.2.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Definiciones de tipos compartidos (DTOs) y Entidades del Dominio (Single Source of Truth) para el ecosistema Prospector."
+
+[dependencies]
+# --- SINAPSIS RUST -> TYPESCRIPT ---
+typeshare = { workspace = true }
+
+# --- SERIALIZACIÓN SOBERANA ---
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# --- ESTRATO DE DATOS NEURALES (ORÁCULO) ---
+# ✅ REPARACIÓN E0432: Habilitando herencia para el oráculo de la Academia
+async-graphql = { workspace = true }
+
+# --- IDENTIDAD E INSTRUMENTACIÓN TEMPORAL ---
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# --- CRIPTOGRAFÍA DE ESTRATO ---
+sha2 = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true, features = ["blocking", "json"] }
+
+[lib]
+name = "prospector_domain_models"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE MODELOS (PROTOCOL TRINITY)
+# =================================================================
+
+[[test]]
+name = "models_integrity"
+path = "src/tests_serialization.rs"
+
+[[test]]
+name = "academy_strata_test"
+path = "../../../tests/mirror/libs/domain/models_rs/academy_strata.test.rs"

@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-01-12T20:34:46.750Z",
+  "total_identities": 3,
+  "stats": {
+    "healthy": 1,
+    "expired": 0,
+    "corrupt": 1,
+    "decrypt_fail": 1
+  },
+  "identities": [
+    {
+      "email": "razpodesta@gmail.com",
+      "status_db": "expired",
+      "status_audit": "CORRUPT",
+      "days_remaining": null,
+      "issues": [
+        "MISSING_KEYS: __Secure-3PSID, SID, HSID"
+      ],
+      "last_updated": "2026-01-12 18:53:40"
+    },
+    {
+      "email": "iamaxonlineprofile@gmail.com",
+      "status_db": "active",
+      "status_audit": "HEALTHY",
+      "days_remaining": 182.7,
+      "issues": [],
+      "last_updated": "2026-01-12 13:45:27"
+    },
+    {
+      "email": "iamenefeterazt@gmail.com",
+      "status_db": "revoked",
+      "status_audit": "DECRYPT_FAIL",
+      "days_remaining": null,
+      "issues": [
+        "VAULT_ACCESS_DENIED: Decryption failed. Verify Master Key integrity."
+      ],
+      "last_updated": "2026-01-12 18:53:40"
+    }
+  ]
+}

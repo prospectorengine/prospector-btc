@@ -1,0 +1,51 @@
+# [apps/prover/Cargo.toml]
+[package]
+name = "prospector-prover"
+version = "0.4.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "El Forjador: Certificación de integridad y reporte automático al Orquestador L3."
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA ---
+prospector-core-math = { workspace = true }
+prospector-core-gen = { workspace = true }
+prospector-core-probabilistic = { workspace = true }
+prospector-domain-models = { workspace = true }
+prospector-domain-strategy = { workspace = true }
+
+# --- RUNTIME Y RED (REPARACIÓN BUILD RENDER) ---
+tokio = { workspace = true, features = ["full"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+dotenvy = { workspace = true }
+
+# --- OBSERVABILIDAD ---
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+
+# --- SERIALIZACIÓN ---
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_prover_lib"
+path = "src/forge.rs"
+
+[[bin]]
+name = "prospector-prover"
+path = "src/main.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE LABORATORIO (PROTOCOL TRINITY)
+# =================================================================
+
+[[test]]
+name = "logic_verification"
+path = "tests/logic_verification.rs"
+
+[[test]]
+name = "sim_verification"
+path = "tests/sim_verification.rs"

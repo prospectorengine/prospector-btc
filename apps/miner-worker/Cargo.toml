@@ -1,0 +1,70 @@
+# [apps/miner-worker/Cargo.toml]
+[package]
+name = "prospector-miner"
+version = "0.3.4"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "El Soldado: Motor de búsqueda de alto rendimiento optimizado para infraestructuras efímeras y cómputo paralelo."
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA (ESTRATOS L1-L3) ---
+prospector-core-math = { workspace = true }
+prospector-core-gen = { workspace = true }
+prospector-core-probabilistic = { workspace = true }
+prospector-domain-models = { workspace = true }
+prospector-domain-strategy = { workspace = true }
+prospector-infra-worker-client = { workspace = true }
+
+# --- RUNTIME ASÍNCRONO Y NETWORKING ZENITH ---
+tokio = { workspace = true, features = ["full"] }
+futures = { workspace = true }
+reqwest = { workspace = true }
+
+# --- MÚSCULO DE CÓMPUTO Y AFINIDAD DE HARDWARE ---
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+core_affinity = "0.8"
+
+# --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+
+# --- TRATAMIENTO DE DATOS Y UTILIDADES ---
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# --- INTERFAZ DE MANDO Y SEÑALES ---
+clap = { workspace = true, features = ["derive", "env"] }
+ctrlc = "3.5"
+
+[lib]
+name = "prospector_miner_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "miner-worker"
+path = "src/main.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DEL TRABAJADOR (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Visibilidad de Activos (Hydrator Access)
+[[test]]
+name = "import_check_test"
+path = "../../tests/mirror/apps/miner_worker/import_check_test.rs"
+
+# 2. Certificación de Resiliencia de Motor (Lifecycle Test)
+[[test]]
+name = "engine_lifecycle_test"
+path = "../../tests/mirror/apps/miner_worker/engine_lifecycle.test.rs"
+
+# ✅ NIVELACIÓN SOBERANA V130: Único target para telemetría de silicio
+[[test]]
+name = "hardware_telemetry_v130"
+path = "../../tests/mirror/apps/miner_worker/hardware_telemetry.test.rs"

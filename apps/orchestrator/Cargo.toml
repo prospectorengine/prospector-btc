@@ -1,0 +1,162 @@
+# [apps/orchestrator/Cargo.toml]
+[package]
+name = "prospector-orchestrator"
+version = "0.4.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Centro de mando y control (C2) soberano: Orquestación bi-direccional, oráculo GraphQL y gestión de estados tácticos."
+
+[dependencies]
+# --- 1. SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
+# Hereda la infraestructura completa nivelada a Zenith V2026
+prospector-core-math = { workspace = true }
+prospector-core-gen = { workspace = true }
+prospector-core-probabilistic = { workspace = true }
+prospector-core-client-vault = { workspace = true }
+prospector-domain-models = { workspace = true }
+prospector-domain-strategy = { workspace = true }
+prospector-infra-db = { workspace = true }
+prospector-shared-heimdall = { workspace = true }
+
+# --- 2. MOTOR ASÍNCRONO Y RED ZENITH (WebSockets & HTTP) ---
+# Nivelado a Axum con capacidades de control remoto bi-direccional
+axum = { workspace = true, features = ["ws", "macros"] }
+tokio = { workspace = true, features = ["full"] }
+tower = { workspace = true, features = ["util", "limit", "buffer"] }
+tower-http = { workspace = true, features = ["cors", "trace", "fs", "limit", "compression-full"] }
+futures = { workspace = true }
+futures-util = { workspace = true }
+tokio-stream = { version = "0.1", features = ["sync"] }
+reqwest = { workspace = true }
+libsql = { workspace = true }
+
+# --- 3. EL ORÁCULO (Data Gateway GraphQL) ---
+async-graphql = { workspace = true }
+async-graphql-axum = { workspace = true }
+
+# --- 4. SERIALIZACIÓN, TRATAMIENTO DE DATOS Y CRIPTO ---
+serde = { workspace = true }
+serde_json = { workspace = true }
+rmp-serde = "1.3"
+base64 = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+sha2 = { workspace = true }
+anyhow = { workspace = true }
+dotenvy = { workspace = true }
+
+# --- 5. OBSERVABILIDAD Y HARDWARE ---
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+num_cpus = { workspace = true }
+
+[lib]
+name = "prospector_orchestrator"
+path = "src/lib.rs"
+
+[[bin]]
+name = "orchestrator"
+path = "src/main.rs"
+
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
+
+[[bin]]
+name = "migrator"
+path = "src/bin/migrator.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN INTEGRAL (PROTOCOL TRINITY)
+# =================================================================
+# Limpieza: Edition heredada de [package]. Sin redundancias.
+
+# --- ESTRATO TÁCTICO (WORKER SYNC) ---
+
+[[test]]
+name = "finding_ingestion_test"
+path = "../../tests/mirror/integration/finding_ingestion_test.rs"
+
+[[test]]
+name = "swarm_telemetry_test"
+path = "../../tests/mirror/apps/orchestrator/state/swarm_telemetry.test.rs"
+
+[[test]]
+name = "identity_refresh_test"
+path = "../../tests/mirror/integration/identity_refresh_test.rs"
+
+# ✅ RECUPERADO: Validación de persistencia de asignación
+[[test]]
+name = "assignment_persistence_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/assignment_persistence.test.rs"
+
+# ✅ RECUPERADO: Validación de ingesta de telemetría L6
+[[test]]
+name = "telemetry_ingest_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/telemetry_ingest.test.rs"
+
+# --- ESTRATO ESTRATÉGICO (HQ SYNC) ---
+
+[[test]]
+name = "outbox_relay_test"
+path = "../../tests/mirror/apps/orchestrator/services/outbox_relay.test.rs"
+
+[[test]]
+name = "bootstrap_integrity_test"
+path = "../../tests/mirror/apps/orchestrator/bootstrap_integrity.test.rs"
+
+[[test]]
+name = "admin_integrity_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/admin_integrity.test.rs"
+
+# --- ESTRATO DE GOBERNANZA & LABORATORIO ---
+
+[[test]]
+name = "governance_api_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/governance_api.test.rs"
+
+[[test]]
+name = "golden_vector_test"
+path = "../../tests/mirror/integration/golden_vector.test.rs"
+
+# ✅ RECUPERADO: Test de flujo de hallazgos
+[[test]]
+name = "finding_flow"
+path = "../../tests/mirror/apps/orchestrator/src/finding_flow.rs"
+
+# --- ESTRATO DE RED Y NEURAL LINK (WS/GQL) ---
+
+[[test]]
+name = "websocket_stream_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/websocket_stream.test.rs"
+
+[[test]]
+name = "neural_socket_v210"
+path = "../../tests/mirror/apps/orchestrator/handlers/neural_socket_v210.test.rs"
+
+[[test]]
+name = "neural_socket_v215"
+path = "../../tests/mirror/apps/orchestrator/handlers/neural_socket_v215.test.rs"
+
+[[test]]
+name = "graphql_endpoint_test"
+path = "../../tests/mirror/apps/orchestrator/handlers/graphql_endpoint.test.rs"
+
+[[test]]
+name = "graphql_routing_test"
+path = "../../tests/mirror/apps/orchestrator/routes/graphql_routing.test.rs"
+
+[[test]]
+name = "graphql_v2_1"
+path = "../../tests/mirror/apps/orchestrator/graphql/gateway_v2_1.test.rs"
+
+[[test]]
+name = "academy_dynamic_v2"
+path = "../../tests/mirror/apps/orchestrator/graphql/academy_dynamic_v2.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El Orquestador utiliza herencia de workspace para asegurar que
+# todas las crates compartan la misma versión de 'tokio' y 'tracing',
+# evitando pánicos por desajuste de runtime en el cluster de Render.
+# =================================================================

@@ -1,0 +1,47 @@
+# [libs/shared/heimdall/Cargo.toml]
+[package]
+name = "prospector-shared-heimdall"
+version = "0.2.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Nervio óptico del sistema: Gestión de telemetría estructurada, filtrado de estratos y observabilidad distribuida."
+
+[dependencies]
+# --- MOTOR DE OBSERVABILIDAD SOBERANO ---
+# El estándar de oro para instrumentación en sistemas de alto rendimiento
+tracing = { workspace = true }
+
+# --- ESTRATO DE FORMATEO Y FILTRADO ---
+# Configurado para emitir JSON estructurado compatible con el Panóptico L5
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+
+# --- UTILIDADES DE ESTRATO ---
+# Nivelado para la gestión de marcas temporales y errores
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para la validación de integridad de logs y reportes al HUB
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde_json = { workspace = true }
+
+[lib]
+name = "prospector_shared_heimdall"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE OBSERVABILIDAD (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Integridad de Trazado (Heimdall Core)
+# Certifica que los logs mantienen el esquema JSON y los niveles de severidad.
+[[test]]
+name = "heimdall_integrity_test"
+path = "../../../tests/mirror/libs/shared/heimdall/heimdall_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Heimdall implementa un modo dual: 'Compact' para desarrollo local
+# y 'JSON Flat' para producción, facilitando el análisis por IA.
+# =================================================================

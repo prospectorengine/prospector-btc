@@ -1,0 +1,48 @@
+# [libs/infra/blockchain-client/Cargo.toml]
+[package]
+name = "prospector-blockchain-client"
+version = "0.2.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Adaptador de red soberano (Rustls-Zenith) para la extracción de balances y actividad de direcciones en la red Bitcoin."
+
+[dependencies]
+# --- NETWORKING SUIZO ZENITH ---
+# Hereda 'reqwest 0.13' con 'rustls-tls-webpki-roots' del Workspace L0
+# Esto garantiza que el binario MUSL sea 100% independiente del OS.
+reqwest = { workspace = true }
+tokio = { workspace = true }
+
+# --- SERIALIZACIÓN Y TRATAMIENTO DE DATOS ---
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# --- GESTIÓN DE ERRORES SINTÁCTICOS ---
+# Nivelado a Thiserror 2.0
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para auditar el handshake con la red real
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_blockchain_client"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN BLOCKCHAIN (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Integridad de Enlace (Blockchain Uplink)
+# Certifica que el adaptador mapea correctamente el JSON de red al dominio.
+[[test]]
+name = "blockchain_uplink_integrity"
+path = "../../../tests/mirror/libs/infra/blockchain_client/blockchain_uplink_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El cliente utiliza una política de Fail-Safe: ante un baneo de
+# IP por parte del proveedor de datos, el sistema transiciona a
+# 'DegradedMode' sin interrumpir la minería local.
+# =================================================================

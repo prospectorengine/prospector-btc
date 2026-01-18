@@ -1,0 +1,21 @@
+packages:
+  - apps/*
+  - libs/**
+  - tools/*
+
+autoInstallPeers: true
+
+link-workspace-packages: true
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild
+  - less
+  - nx
+  - sharp
+  - unrs-resolver
+
+prefer-workspace-packages: true
+
+shamefully-hoist: true

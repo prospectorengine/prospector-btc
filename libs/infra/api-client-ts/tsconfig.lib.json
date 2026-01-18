@@ -1,0 +1,23 @@
+// INICIO DEL ARCHIVO [libs/infra/api-client-ts/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/libs/infra/api-client-ts",
+    "rootDir": ".",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node"],
+    "paths": {
+      "@prospector/api-contracts": [
+        "../../../dist/out-tsc/libs/domain/api-contracts/src/index.d.ts"
+      ],
+      "@prospector/infra-supabase": [
+        "../../../dist/out-tsc/libs/infra/supabase/src/index.d.ts"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+}
+// FIN DEL ARCHIVO [libs/infra/api-client-ts/tsconfig.lib.json]

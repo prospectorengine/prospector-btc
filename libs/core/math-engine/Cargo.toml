@@ -1,0 +1,85 @@
+# [libs/core/math-engine/Cargo.toml]
+[package]
+name = "prospector-core-math"
+version = "0.3.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor matemático de bajo nivel para secp256k1 con soporte de telemetría forense y ráfagas Jacobiana."
+
+[dependencies]
+# --- NÚCLEO CRIPTOGRÁFICO SOBERANO ---
+secp256k1 = { workspace = true }
+sha2 = { workspace = true }
+ripemd = "0.1"
+
+# --- SERIALIZACIÓN DE ESTRATO ---
+# ✅ REPARACIÓN E0432: Habilitando herencia de Serde para FieldElement
+serde = { workspace = true }
+
+# --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
+tracing = { workspace = true }
+
+# --- UTILIDADES DE ALTO RENDIMIENTO (HEAP-FREE) ---
+thiserror = { workspace = true }
+hex = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+tracing-subscriber = { workspace = true }
+criterion = { workspace = true }
+proptest = { workspace = true }
+num-bigint = "0.4"
+num-traits = "0.2"
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_core_math"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (PROTOCOL TRINITY)
+# =================================================================
+
+[[test]]
+name = "field_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/field_integrity.test.rs"
+
+[[test]]
+name = "secp256k1_integrity"
+path = "../../../tests/mirror/ltracing-subscriber = { workspace = true }ibs/core/math_engine/secp256k1_integrity.test.rs"
+
+[[test]]
+name = "arithmetic_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs"
+
+[[test]]
+name = "field_integrity_torture"
+path = "../../../tests/mirror/libs/core/math_engine/field_integrity_torture.test.rs"
+
+[[test]]
+name = "scalar_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/scalar_integrity.test.rs"
+
+[[test]]
+name = "point_jacobian_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/point_jacobian_integrity.test.rs"
+
+[[test]]
+name = "secp256k1_integrity_v22"
+path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity_v22.test.rs"
+
+[[test]]
+name = "field_integrity_v150"
+path = "../../../tests/mirror/libs/core/math_engine/field_integrity_v150.test.rs"
+
+# =================================================================
+# ESTRATO DE RENDIMIENTO (BENCHMARKS)
+# =================================================================
+
+[[bench]]
+name = "secp256k1_bench"
+harness = false

@@ -1,0 +1,14 @@
+// INICIO DEL ARCHIVO [libs/shared/heimdall-ts/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/libs/shared/heimdall-ts",
+    "rootDir": ".",
+    "declaration": true,
+    "types": ["node"],
+    "lib": ["es2020", "dom"],
+    "composite": true
+  },
+  "exclude": ["**/*.spec.ts", "jest.config.ts"]
+}
+// FIN DEL ARCHIVO [libs/shared/heimdall-ts/tsconfig.lib.json]

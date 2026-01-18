@@ -1,0 +1,33 @@
+// INICIO DEL ARCHIVO [libs/core/client-vault/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": [
+      "es2022",
+      "dom"
+    ],
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "outDir": "../../../dist/out-tsc/libs/core/client-vault",
+    "rootDir": ".",
+    "tsBuildInfoFile": "../../../dist/out-tsc/libs/core/client-vault.tsbuildinfo",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "jest.config.ts"
+  ],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  "references": []
+}
+// FIN DEL ARCHIVO [libs/core/client-vault/tsconfig.json]

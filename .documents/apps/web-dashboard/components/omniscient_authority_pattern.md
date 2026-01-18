@@ -1,0 +1,2 @@
+Física de la Autoridad Delegada:
+En sistemas distribuidos, el cliente no debe "calcular" si puede realizar una acción crítica; debe "preguntar" al orquestador. Al integrar el ban_shield_status directamente en el SwarmLauncher, eliminamos la posibilidad de que un operador fuerce una ignición que resultaría en un baneo de cuenta en Colab. El componente transiciona de ser un Calculador Pasivo a un Receptor de Mando Soberano, alineándose con la arquitectura de la Tesis.

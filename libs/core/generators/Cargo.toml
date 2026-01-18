@@ -1,0 +1,52 @@
+# [libs/core/generators/Cargo.toml]
+[package]
+name = "prospector-core-gen"
+version = "0.3.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Generación de formatos estándar de Bitcoin (Address, WIF) con optimización Zero-Alloc para el Hot-Path."
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA ---
+# Hereda la precisión del motor matemático nivelado
+prospector-core-math = { workspace = true }
+
+# --- CODIFICACIÓN Y ESTRATO DE RED ---
+# Sincronizado con el estándar P2PKH de la Tesis
+bs58 = { version = "0.5", features = ["check"] }
+
+# --- GESTIÓN DE ERRORES Y UTILIDADES ---
+# Nivelado a Thiserror 2.0 y Hex 0.4
+thiserror = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+# Sincronización de autoridad criptográfica para validación isomórfica
+sha2 = { workspace = true }
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_core_gen"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE GENERADORES (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Certificación de Derivación (Satoshi Genesis Vector)
+[[test]]
+name = "address_integrity"
+path = "../../../tests/mirror/libs/core/generators/address_integrity.test.rs"
+
+# 2. Validación de Codificación Legacy P2PKH (Base58Check)
+[[test]]
+name = "address_legacy_integrity"
+path = "../../../tests/mirror/libs/core/generators/address_legacy_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Los aparatos de prueba reportan métricas de micro-segundos para
+# validar la eficiencia de la estrategia Zero-Allocation.
+# =================================================================

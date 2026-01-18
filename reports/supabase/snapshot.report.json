@@ -1,0 +1,12 @@
+{
+  "apparatus": "state_snapshot",
+  "captured_at_timestamp": "2026-01-12T12:31:33.228Z",
+  "global_metrics": {
+    "archived_jobs_count": 4345,
+    "vault_items_count": 0,
+    "profiles_count": 0
+  },
+  "execution_samples": {
+    "latest_certified_missions": []
+  }
+}

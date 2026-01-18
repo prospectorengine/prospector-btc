@@ -1,0 +1,28 @@
+// INICIO DEL ARCHIVO [libs/infra/api-client-ts/tsconfig.json]
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@prospector/api-contracts": ["../../domain/api-contracts/src/index.ts"],
+      "@prospector/infra-supabase": ["../../infra/supabase/src/index.ts"],
+      "@prospector/heimdall-ts": ["../../shared/heimdall-ts/src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "jest.config.ts"],
+  "references": [
+    { "path": "../../domain/api-contracts" },
+    { "path": "../supabase" },
+    { "path": "../../shared/heimdall-ts" }
+  ]
+}
+// FIN DEL ARCHIVO [libs/infra/api-client-ts/tsconfig.json]

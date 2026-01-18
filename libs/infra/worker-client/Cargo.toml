@@ -1,0 +1,66 @@
+# [libs/infra/worker-client/Cargo.toml]
+[package]
+name = "prospector-infra-worker-client"
+version = "0.3.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Adaptador de red soberano para la comunicación asíncrona y descarga paralela de estratos binarios (Hydra Stream)."
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA ---
+# Provee los contratos de intercambio de datos nivelados
+prospector-domain-models = { workspace = true }
+
+# --- MOTOR ASÍNCRONO Y COMUNICACIÓN ZENITH ---
+# Configurado con certificados raíz embebidos para portabilidad MUSL
+tokio = { workspace = true }
+reqwest = { workspace = true }
+futures = "0.3"
+
+# --- SERIALIZACIÓN Y VALIDACIÓN DE ARTEFACTOS ---
+# Nivelado para la gestión de ADN sintético y hashes SHA-256
+serde = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+url = "2.5"
+sha2 = { workspace = true }
+
+# --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
+# Emisión de logs de red hacia el orquestador C2
+tracing = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para la simulación de archivos y ráfagas de red
+tempfile = "3.24"
+serde_json = { workspace = true }
+
+[lib]
+name = "prospector_infra_worker_client"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE UPLINK (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Hidratación Paralela (Hydra Stream)
+# Certifica que el cliente orquesta N descargas concurrentes de shards.
+[[test]]
+name = "parallel_sync_test"
+path = "../../../tests/mirror/libs/infra/worker_client/parallel_sync.test.rs"
+
+# 2. Validación de Integridad de ADN (Forensic Hydrator)
+# Verifica la firma 'PERF' y el hash SHA-256 del material forense.
+[[test]]
+name = "hydrator_test"
+path = "../../../tests/mirror/libs/infra/worker_client/hydrator.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El protocolo Hydra Stream optimiza el uso del ancho de banda
+# saturando el túnel de red con ráfagas simultáneas, reduciendo el
+# tiempo de ignición del nodo en un 75%.
+# =================================================================

@@ -1,0 +1,20 @@
+// INICIO DEL ARCHIVO [libs/infra/supabase/tsconfig.lib.json]
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/libs/infra/supabase",
+    "rootDir": ".",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node"],
+    "paths": {
+      "@prospector/api-contracts": [
+        "../../../dist/out-tsc/libs/domain/api-contracts/src/index.d.ts"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+}
+// FIN DEL ARCHIVO [libs/infra/supabase/tsconfig.lib.json]

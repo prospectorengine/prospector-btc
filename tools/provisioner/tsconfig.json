@@ -1,0 +1,19 @@
+// INICIO DEL ARCHIVO [tools/provisioner/tsconfig.json]
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "../../dist/out-tsc/tools/provisioner",
+    "rootDir": "."
+  },
+  "include": ["src/**/*"]
+}
+// FIN DEL ARCHIVO [tools/provisioner/tsconfig.json]

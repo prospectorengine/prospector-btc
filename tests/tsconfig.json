@@ -1,0 +1,35 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "dom"],
+    "types": ["jest", "node"],
+    "baseUrl": "..",
+    /*
+       MAPEO NEURAL SOBERANO:
+       Garantiza que los Mirror Tests resuelvan las librerías
+       desde el código fuente (Source) para validación en tiempo real.
+    */
+    "paths": {
+      "@/*": ["apps/web-dashboard/*"],
+      "@prospector/api-client": ["libs/infra/api-client-ts/src/index.ts"],
+      "@prospector/api-contracts": ["libs/domain/api-contracts/src/index.ts"],
+      "@prospector/crypto-vault": ["libs/core/client-vault/src/index.ts"],
+      "@prospector/ui-kit": ["libs/shared/ui-kit/src/index.ts"],
+      "@prospector/infra-supabase": ["libs/infra/supabase/src/index.ts"]
+    },
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "mirror/**/*.ts",
+    "mirror/**/*.tsx",
+    "**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

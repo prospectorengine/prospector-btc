@@ -1,0 +1,43 @@
+# =================================================================
+# APARATO: CLOUD STRATA SYNCHRONIZER (V1.1)
+# CLASIFICACIÓN: CI/CD AUTOMATION (ESTRATO L6)
+# RESPONSABILIDAD: NIVELACIÓN AUTOMÁTICA DE TURSO CLOUD
+# =================================================================
+
+name: "Sovereign DB Migration"
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'libs/infra/db-turso/src/schema.rs'
+      - 'apps/orchestrator/src/bin/migrator.rs'
+  workflow_dispatch: # Permite ejecución manual desde el panel de GitHub
+
+jobs:
+  migrate_tactical_ledger:
+    name: "Syncing Motor A (Turso)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "🛰️ Acquiring Source Code"
+        uses: actions/checkout@v4
+
+      - name: "Cr Initializing Rust Toolchain"
+        uses: dtolnay/rust-toolchain@nightly # Usamos nightly para paridad con Docker
+
+      - name: "💾 Optimizing Build Cache"
+        uses: Swatinem/rust-cache@v2
+
+      - name: "🏗️ Compiling & Executing Migrator"
+        env:
+          # Inyectamos los secretos del repositorio
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          echo "🚀 Initiating Cloud Handshake..."
+          cargo run --release --bin migrator
+
+      - name: "✅ Integrity Report"
+        if: success()
+        run: echo "STRATUM_LEVEL_V142.5_CONFIRMED"

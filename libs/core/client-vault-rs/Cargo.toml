@@ -1,0 +1,50 @@
+# [libs/core/client-vault-rs/Cargo.toml]
+[package]
+name = "prospector-core-client-vault"
+version = "0.2.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor de descifrado Zero-Knowledge (AES-256-GCM) con derivación PBKDF2 sintonizada para el enjambre."
+
+[dependencies]
+# --- NÚCLEO CRIPTOGRÁFICO SOBERANO ---
+# Implementación de cifrado autenticado de grado industrial
+aes-gcm = "0.10"
+# Derivación de claves sincronizada con el motor WebCrypto L1-TS
+pbkdf2 = { version = "0.12", features = ["simple"] }
+sha2 = { workspace = true }
+
+# --- SERIALIZACIÓN Y ESTRATO DE DATOS ---
+# Nivelado a Zenith V0.22 para gestión de payloads Base64
+serde = { workspace = true }
+base64 = { workspace = true }
+
+# --- GESTIÓN DE ERRORES SINTÁCTICOS ---
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# --- ARMAMENTO PARA EL PROVING GROUNDS ---
+# Requerido para la validación de paridad entre estratos
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+[lib]
+name = "prospector_core_client_vault"
+path = "src/lib.rs"
+
+# =================================================================
+# MATRIZ DE CERTIFICACIÓN DE SEGURIDAD (PROTOCOL TRINITY)
+# =================================================================
+
+# 1. Auditoría de Paridad Criptográfica (JS <-> Rust)
+# Certifica que el secreto generado en el Dashboard se abre en el Minero.
+[[test]]
+name = "vault_parity_integrity"
+path = "../../../tests/mirror/libs/core/client_vault_rs/vault_parity_integrity.test.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El motor utiliza 150,000 iteraciones PBKDF2 para elevar el coste
+# de ataques de fuerza bruta sobre la frase maestra del operador.
+# =================================================================

@@ -1,0 +1,8 @@
+PROPUESTAS DE OPTIMIZACIÓN FUTURAS, RECORDAR AL REFACTORIZAR EL APARATO RELACIONADO PARA IMPLEMENTACION
+
+Mejora Proactiva (Sovereign Level): Actualmente, el guardián depende de la expiración temporal del leased_until., Implementar un "Zombie Heartbeat Interrogator". El guardián podría realizar un JOIN entre la tabla identities y el estado de los workers en RAM (active_nodes_telemetry). Si una identidad está bloqueada por un worker que no ha enviado un latido en los últimos 180 segundos, la identidad debería ser liberada instantáneamente, incluso si el lease temporal no ha expirado. Esto reduciría el tiempo de recuperación de fallos (MTTR) de 15 minutos a 3 minutos.
+
+Propuesta proactiva: Implementar un Asynchronous Batch Uplink. En lugar de realizar una petición HTTP por cada misión, deberíamos agrupar los 25 reportes de la ráfaga en un solo array JSON y enviarlos mediante una sola llamada al endpoint /rest/v1/archived_jobs de Supabase. Esto reduciría el overhead de red en un 95% y eliminaría el cuello de botella del RTT entre nubes.
+
+Mejora Proactiva: En el Proving Grounds remoto (GitHub Actions), elevaré el rango de prueba a 10 segundos. Esto forzará al motor a procesar ~35 millones de reconstrucciones, permitiendo medir la estabilidad de la ráfaga SIMD bajo condiciones de estrés prolongado, certificando no solo la precisión, sino la resistencia del silicio.
+Mejora Proactiva (Elite Level): Implementar BLOB-GUID Indexing. Al transicionar el almacenamiento de los UUIDs de misiones de TEXT a BLOB(16) en SQLite, reduciríamos el tamaño de los índices en un ~50% y aceleraríamos las operaciones de JOIN y WHERE id = ? en ráfagas masivas. Esto es crítico cuando el Ledger Táctico supere el millón de misiones registradas.

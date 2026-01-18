@@ -1,0 +1,21 @@
+{
+  "name": "prospector-domain-strategy",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/domain/mining-strategy/src",
+  "targets": {
+    "test": {
+      "executor": "@monodon/rust:test",
+      "options": {
+        "target-dir": "dist/target/libs/domain/mining-strategy"
+      }
+    },
+    "lint": {
+      "executor": "@monodon/rust:lint",
+      "options": {
+        "target-dir": "dist/target/libs/domain/mining-strategy"
+      }
+    }
+  },
+  "tags": ["layer:domain", "type:strategy"]
+}
