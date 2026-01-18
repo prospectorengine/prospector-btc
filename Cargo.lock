@@ -3036,7 +3036,7 @@ dependencies = [
 
 [[package]]
 name = "prospector-orchestrator"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -3053,7 +3053,13 @@ dependencies = [
  "prospector-core-gen",
  "prospector-core-math",
  "prospector-core-probabilistic",
+ "prospector-domain-billing",
+ "prospector-domain-content",
+ "prospector-domain-forensics",
+ "prospector-domain-gamification",
  "prospector-domain-models",
+ "prospector-domain-notification",
+ "prospector-domain-social",
  "prospector-domain-strategy",
  "prospector-infra-db",
  "prospector-shared-heimdall",

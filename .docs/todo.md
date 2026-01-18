@@ -178,3 +178,84 @@ Soberanía del Dato	La lógica Web3 reside en su propia celda, garantizando que 
 
 ---
 
+PTROXIMOS PASOS A DESARROLLAR LOS SIGUIENTES:
+
+ADICIÓN PARA todo.md: ESTRATO L5 (ZENITH UI)
+📡 FASE 1: SINAPSIS DE DATOS (EL PUENTE NEURAL)
+Finalidad: Habilitar la comunicación tipada entre el frontend y los nuevos handlers de Rust.
+
+Refactorización del API Client (api-client-ts):
+
+Inyectar billingApi: Métodos getQuota() y getHistory().
+
+Inyectar heraldApi: Métodos getNotifications() y markAsRead().
+
+Inyectar nexusApi: Métodos getPrestige() y getLeaderboard().
+
+Sincronización de Contratos:
+
+Ejecutar typeshare para mapear SubscriptionTier, NotificationSeverity y OperatorRank a TypeScript.
+
+Validar con pnpm audit:coherence que los alias @prospector/ui-* están operativos.
+🔋 FASE 2: ESTRATO DE FACTURACIÓN (ENERGY CORE)
+Finalidad: Visualizar el "combustible" del sistema y permitir la escalabilidad financiera.
+
+Componente EnergyCreditsDisplay:
+
+HUD visual en el Sidebar que muestre créditos remanentes con barra de progreso circular.
+
+Animación de "consumo en vivo" cuando el worker adquiere una misión.
+
+Página de Gestión de Suscripción (/dashboard/billing):
+
+Matriz de Tiers (Observer/Operator/Architect).
+
+Integración con Stripe Checkout (Redirección segura).
+
+Historial de transacciones consumidas desde el Outbox Táctico.
+🔔 FASE 3: ESTRATO HERALD (EL NERVIO COMUNICADOR)
+Finalidad: Notificaciones instantáneas y rastro de eventos críticos.
+
+Componente NotificationBell (Header):
+
+Contador reactivo de mensajes no leídos (TanStack Query synchronization).
+
+Pop-over con previsualización de las últimas 5 alertas (Priorizando colisiones).
+
+Página de Centro de Mensajes (/dashboard/notifications):
+
+Vista detallada de alertas con filtrado por severidad (INFO, CRITICAL, COLLISION).
+
+Implementación de "Mark all as read" con actualización optimista (Cero latencia visual).
+🏆 FASE 4: ESTRATO NEXUS (PRESTIGIO Y COMUNIDAD)
+Finalidad: Gamificación del esfuerzo y cohesión del enjambre.
+
+Componente MasteryProgress:
+
+Visualización del rango actual (ej: Elite_Archaeologist) y XP necesaria para el siguiente nivel.
+
+Página de Leaderboard Global (/dashboard/community):
+
+Rejilla virtualizada de alta densidad para mostrar el ranking de operadores.
+
+Métrica de "Potencia Aportada" (Hashrate histórico acumulado).
+
+Chat Técnico P2P (Beta):
+
+Terminal de mensajes cortos integrada al NeuralSocket para comunicación entre suscriptores Architect.
+📰 FASE 5: ESTRATO CONTENT (CRÓNICAS FORENSES)
+Finalidad: Educación técnica y divulgación de hallazgos de la Tesis.
+
+Lector de Crónicas (/dashboard/content):
+
+Integración con Supabase para renderizar artículos en Markdown.
+
+Visor de "Hallazgos de la Semana": Resumen automatizado de entropía débil detectada.
+🛡️ JUSTIFICACIÓN TÉCNICA (POR QUÉ Y CÓMO)
+TanStack Query v5: Se utilizará para todos los servicios L7. ¿Por qué? Permite Shared State entre la campana de notificaciones y la página de mensajes. Si lees un mensaje en la página, la campana se actualiza instantáneamente sin peticiones extra.
+WebSockets (Neural Socket): Las notificaciones de colisión (cc) no esperarán al polling. El orquestador empujará el evento por el socket y la UI reaccionará con un Toast de alta prioridad.
+Aislamiento de Workspaces: Cada fase se implementará en su propia librería @prospector/ui-*. Esto garantiza que un error en el código del Chat (Social) no impida que el usuario pueda pagar su suscripción (Billing).
+Higiene de Tesis: Se eliminarán todos los placeholders actuales. Los avatares, nombres y créditos serán datos reales inyectados desde el Motor B.
+
+---
+

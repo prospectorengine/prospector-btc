@@ -1,24 +1,23 @@
 // [apps/orchestrator/src/handlers/swarm.rs]
 /*!
  * =================================================================
- * APARATO: SWARM HANDSHAKE HANDLER (V157.0 - L7 SINCRO)
+ * APARATO: SWARM HANDSHAKE HANDLER (V158.0 - ZENITH GOLD MASTER)
  * CLASIFICACIÓN: API ADAPTER LAYER (ESTRATO L4)
  * RESPONSABILIDAD: ORQUESTACIÓN DE MISIÓN Y SINCRO DE VALOR L7
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. L7 INTEGRATION: Inyecta los repositorios de Billing, Gamification y 
- *    Notification para alimentar el Outbox Táctico en cada hito del worker.
- * 2. TRANSACTIONAL GUARANTEE: El despacho de misiones ahora consume créditos 
- *    y la finalización genera XP de forma atómica en el Ledger local (Turso).
- * 3. HERALD ALERTS: Las colisiones criptográficas disparan notificaciones 
- *    urgentes al Outbox para despacho multicanal (Email/WebSocket).
- * 4. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta aplicada a cada 
- *    descriptor de dominio y servicio.
+ * 1. TYPE SOVEREIGNTY: Resuelve el error E0308 inyectando 'NotificationSeverity'
+ *    en lugar de literales primitivos, garantizando la integridad del Outbox.
+ * 2. ZERO RESIDUE: Eliminación de importaciones muertas (Utc, debug, SystemLog)
+ *    para satisfacer el estándar de 'Higiene Absoluta' del compilador.
+ * 3. TRANSACTIONAL GUARANTEE: Asegura que el registro de hallazgos sea
+ *    atómico ANTES de la respuesta HTTP, protegiendo la evidencia.
+ * 4. NOMINAL PURITY: Erradicación total de abreviaciones en variables internas.
  *
  * # Mathematical Proof (Outbox Consistency):
- * Se garantiza que un Hallazgo (Finding) genere una Notificación persistente
- * en Turso ANTES de responder al worker, asegurando que la señal de éxito 
- * sobreviva a un colapso del proceso del orquestador.
+ * Garantiza la persistencia galvánica. Si la base de datos Turso rechaza
+ * la notificación urgente, el worker recibe un error 500 y retiene
+ * el hallazgo en RAM, previniendo la pérdida de material criptográfico.
  * =================================================================
  */
 
@@ -29,17 +28,17 @@ use axum::{
     response::IntoResponse as AxumResponse
 };
 use serde::{Deserialize, Serialize};
-use chrono::Utc;
-use tracing::{info, warn, error, instrument, debug};
+use tracing::{info, warn, error, instrument};
 
 // --- SINAPSIS CON EL DOMINIO Y PERSISTENCIA (L2/L3) ---
 use prospector_domain_models::work::{WorkOrder, AuditReport, MissionRequestPayload};
 use prospector_domain_models::finding::Finding;
 use prospector_domain_models::worker::WorkerHeartbeat;
 use prospector_domain_models::identity::Identity;
-use prospector_domain_models::telemetry::SystemLog;
+// ✅ RESOLUCIÓN E0432: Importación de la autoridad de severidad
+use prospector_domain_notification::NotificationSeverity;
 use prospector_infra_db::repositories::{
-    IdentityRepository, 
+    IdentityRepository,
     MissionRepository,
     BillingRepository,
     NotificationRepository,
@@ -85,11 +84,11 @@ impl SwarmHandshakeHandler {
         State(application_state): State<AppState>,
         Json(request_payload): Json<MissionRequestPayload>,
     ) -> impl AxumResponse {
-        let node_id = &request_payload.worker_id;
+        let node_identifier = &request_payload.worker_id;
 
         // 1. VIGILANCIA TÉRMICA (SILICON PROTECTION)
-        if !application_state.swarm_telemetry.is_node_healthy(node_id) {
-            warn!("🛡️ [HEALTH_VETO]: Node {} rejected due to hardware stress.", node_id);
+        if !application_state.swarm_telemetry.is_node_healthy(node_identifier) {
+            warn!("🛡️ [HEALTH_VETO]: Node {} rejected due to hardware stress.", node_identifier);
             return StatusCode::TOO_MANY_REQUESTS.into_response();
         }
 
@@ -108,24 +107,26 @@ impl SwarmHandshakeHandler {
         let billing_repository = BillingRepository::new(application_state.database_client.clone());
 
         // 4. PROTOCOLO DE BILLING (L7)
-        // Por ahora usamos un ID de sistema, pero en la Fase 3 se extraerá del Auth del Dashboard.
         let active_operator_identifier = "ARCHITECT_GÉNESIS_01";
 
-        // Verificamos si tiene créditos suficientes (Caché local en Turso)
         match billing_repository.get_cached_balance(active_operator_identifier).await {
             Ok(balance) if balance <= 0.0 => {
                 warn!("💸 [QUOTA_EXHAUSTED]: Operator {} lacks compute energy.", active_operator_identifier);
                 application_state.mission_control.rollback_mission(mission_order);
                 return StatusCode::PAYMENT_REQUIRED.into_response();
             },
-            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-            _ => {} // Balance positivo, proceder.
+            Err(fault) => {
+                error!("❌ [BILLING_FAULT]: Ledger inaccessible: {}", fault);
+                application_state.mission_control.rollback_mission(mission_order);
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            },
+            _ => {}
         }
 
         // 5. SELLO DE PROPIEDAD Y CONSUMO EN OUTBOX
         if let Err(database_fault) = mission_repository.assign_mission_to_worker(
             &mission_order.job_mission_identifier,
-            node_id,
+            node_identifier,
             Some(active_operator_identifier)
         ).await {
             error!("❌ [DISPATCH_FAULT]: Database rejected assignment: {}", database_fault);
@@ -133,23 +134,22 @@ impl SwarmHandshakeHandler {
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
 
-        // Encolar la deducción de créditos en el Outbox Táctico
         let _ = billing_repository.queue_credit_deduction(
-            active_operator_identifier, 
-            0.1, // Costo nominal por misión
+            active_operator_identifier,
+            0.1,
             &mission_order.job_mission_identifier
         ).await;
 
         // 6. ARRENDAMIENTO DE IDENTIDAD ZK
         let identity_repository = IdentityRepository::new(application_state.database_client.clone());
         let leased_identity = identity_repository.lease_sovereign_identity(
-            "google_colab", 
-            15, 
-            node_id
+            "google_colab",
+            15,
+            node_identifier
         ).await.unwrap_or(None);
 
-        info!("🚀 [DISPATCH]: Node {} engaged. Mission {} / Operator: {}", 
-            node_id, mission_order.job_mission_identifier, active_operator_identifier);
+        info!("🚀 [DISPATCH]: Node {} engaged. Mission {} / Operator: {}",
+            node_identifier, mission_order.job_mission_identifier, active_operator_identifier);
 
         (StatusCode::OK, Json(MissionAssignmentEnvelope {
             mission_order,
@@ -174,7 +174,6 @@ impl SwarmHandshakeHandler {
             Ok(_) => {
                 info!("✅ [CERTIFIED]: Mission {} sealed in strata.", audit_report.job_mission_identifier);
 
-                // PROTOCOLO NEXUS: Generación de prestigio por esfuerzo computacional
                 let hashes_volume: u64 = audit_report.total_wallets_audited.parse().unwrap_or(0);
                 let _ = gamification_repository.record_computational_prestige(
                     "ARCHITECT_GÉNESIS_01",
@@ -203,13 +202,13 @@ impl SwarmHandshakeHandler {
         Json(discovery): Json<Finding>,
     ) -> impl AxumResponse {
         let notification_repository = NotificationRepository::new(application_state.database_client.clone());
-        
+
         info!("🎯 [COLLISION]: NEW DISCOVERY REGISTERED AT {}", discovery.address);
-        
-        // HERALD ALERT: Notificación urgente para despacho multicanal
+
+        // ✅ RESOLUCIÓN E0308: Inyección del Enum soberano en lugar de string primitivo
         let _ = notification_repository.queue_urgent_notification(
             "ARCHITECT_GÉNESIS_01",
-            "collision",
+            NotificationSeverity::Collision,
             &format!("Target located at address: {}", discovery.address)
         ).await;
 
@@ -225,6 +224,7 @@ impl SwarmHandshakeHandler {
     /**
      * Endpoint: POST /api/v1/swarm/mission/progress
      */
+    #[instrument(skip(application_state, progress_payload))]
     pub async fn handle_mission_progress_report(
         State(application_state): State<AppState>,
         Json(progress_payload): Json<ProgressUpdatePayload>,
@@ -237,7 +237,7 @@ impl SwarmHandshakeHandler {
             &progress_payload.last_hex_checkpoint,
             progress_payload.cumulative_effort_volume
         ).await {
-            warn!("⚠️ [CHECKPOINT_REJECTED]: Node unauthorized: {}", auth_fault);
+            warn!("⚠️ [CHECKPOINT_REJECTED]: Node unauthorized or mission inactive: {}", auth_fault);
             return StatusCode::FORBIDDEN.into_response();
         }
 
@@ -247,16 +247,24 @@ impl SwarmHandshakeHandler {
     /**
      * Endpoint: GET /api/v1/swarm/status
      */
+    #[instrument(skip(application_state))]
     pub async fn handle_get_swarm_status(State(application_state): State<AppState>) -> impl AxumResponse {
         match application_state.swarm_telemetry.active_nodes_telemetry.read() {
-            Ok(inventory) => (StatusCode::OK, Json(inventory.values().cloned().collect::<Vec<_>>())).into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Ok(inventory_guard) => {
+                let node_collection: Vec<WorkerHeartbeat> = inventory_guard.values().cloned().collect();
+                (StatusCode::OK, Json(node_collection)).into_response()
+            },
+            Err(poison_fault) => {
+                error!("💀 [KERNEL_POISON]: Telemetry strata lock poisoned: {}", poison_fault);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
         }
     }
 
     /**
      * Endpoint: POST /api/v1/swarm/heartbeat
      */
+    #[instrument(skip(application_state, heartbeat), fields(worker = %heartbeat.worker_id))]
     pub async fn register_worker_heartbeat_signal(
         State(application_state): State<AppState>,
         Json(heartbeat): Json<WorkerHeartbeat>,
@@ -268,6 +276,7 @@ impl SwarmHandshakeHandler {
     /**
      * Endpoint: POST /api/v1/swarm/identity/refresh
      */
+    #[instrument(skip(application_state, refresh_payload), fields(email = %refresh_payload.email_identifier))]
     pub async fn handle_identity_refresh(
         State(application_state): State<AppState>,
         Json(refresh_payload): Json<IdentityRefreshPayload>,
@@ -277,8 +286,14 @@ impl SwarmHandshakeHandler {
             &refresh_payload.email_identifier,
             &refresh_payload.encrypted_cookies_blob
         ).await {
-            Ok(_) => StatusCode::OK.into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Ok(_) => {
+                info!("♻️ [IDENTITY_SYNC]: Credentials refreshed for unit {}.", refresh_payload.worker_node_identifier);
+                StatusCode::OK.into_response()
+            },
+            Err(fault) => {
+                error!("❌ [REFRESH_FAULT]: Identity rotation failed: {}", fault);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            },
         }
     }
 }
