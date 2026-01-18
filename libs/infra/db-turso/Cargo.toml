@@ -4,22 +4,28 @@ name = "prospector-infra-db"
 version = "0.3.0"
 edition = "2021"
 authors = ["Raz Podesta <metaShark Tech>"]
-description = "Adaptador de persistencia táctica (Motor A) basado en libSQL con soporte para transacciones ACID y gobernanza IGFS."
+description = "Adaptador de persistencia táctica (Motor A) basado en libSQL con soporte para transacciones ACID, gobernanza IGFS y Patrón Outbox para servicios L7."
+license = "MIT"
 
 [dependencies]
 # --- MOTOR DE BASE DE DATOS ZENITH ---
-# Sincronizado con la versión 0.29 del Workspace
+# Mantiene la versión 0.3.5 heredada del workspace para estabilidad de ráfaga.
 libsql = { workspace = true }
 
 # --- RUNTIME Y ASINCRONÍA ---
-# Requerido para la gestión de blobs de ADN y I/O de red
+# Requerido para la gestión de blobs de ADN y I/O de red resiliente.
 tokio = { workspace = true, features = ["fs", "io-util"] }
 
-# --- SINAPSIS INTERNA SOBERANA ---
+# --- SINAPSIS INTERNA SOBERANA (ESTRATOS L1-L2) ---
+# ✅ NIVELACIÓN SOBERANA: Inyección de enlaces hacia la tríada de servicios L7.
 prospector-core-math = { workspace = true }
 prospector-domain-models = { workspace = true }
+prospector-domain-billing = { workspace = true }
+prospector-domain-notification = { workspace = true }
+prospector-domain-gamification = { workspace = true }
 
 # --- SERIALIZACIÓN Y TRATAMIENTO DE DATOS ---
+# Preserva las versiones exactas para evitar deriva de tipos en el Ledger.
 hex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -29,13 +35,14 @@ num-bigint = "0.4"
 sha2 = { workspace = true }
 
 # --- OBSERVABILIDAD Y GESTIÓN DE ERRORES ---
+# Nivelado para reporte forense en el Dashboard Zenith L5.
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
 # --- ARMAMENTO PARA EL PROVING GROUNDS ---
-# Requerido para la validación de latencia y reportes al HUB
+# Requerido para la validación de latencia y reportes al HUB central.
 reqwest = { workspace = true, features = ["blocking", "json"] }
 
 [lib]
@@ -76,15 +83,25 @@ path = "../../../tests/mirror/libs/infra/db_turso/mission_repository_v270.test.r
 name = "repositories_registry_test"
 path = "../../../tests/mirror/libs/infra/db_turso/repositories_registry.test.rs"
 
+# 7. Escrutinio de Fragmentación de Misiones (Hydra-Slicer)
 [[test]]
 name = "mission_slicing_v300"
 path = "../../../tests/mirror/libs/infra/db_turso/mission_slicing_v300.test.rs"
 
+# 8. Certificación de Evolución de Esquema V150
 [[test]]
 name = "schema_evolution_v150"
 path = "../../../tests/mirror/libs/infra/db_turso/schema_evolution_v150.test.rs"
 
+# 9. ✅ REINTEGRACIÓN: Certificación de Evolución de Esquema V151 (Academia)
+[[test]]
+name = "schema_evolution_v151"
+path = "../../../tests/mirror/libs/infra/db_turso/schema_evolution_v151.test.rs"
 
+# 10. ✅ REINTEGRACIÓN: Auditoría de Recursión de Afiliados (Grafo Social)
+[[test]]
+name = "affiliate_recursion_test"
+path = "../../../tests/mirror/libs/infra/db_turso/affiliate_recursion.test.rs"
 
 # =================================================================
 # NOTA TÉCNICA:

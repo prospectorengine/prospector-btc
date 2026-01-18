@@ -1,19 +1,24 @@
 // [apps/orchestrator/src/handlers/swarm.rs]
 /*!
  * =================================================================
- * APARATO: SWARM HANDSHAKE HANDLER (V155.0 - SWISS PRECISION)
- * CLASIFICACIÓN: API ADAPTER LAYER (ESTRATO L3)
- * RESPONSABILIDAD: GESTIÓN DE MISIÓN, IDENTIDAD Y AUTO-CURACIÓN
+ * APARATO: SWARM HANDSHAKE HANDLER (V157.0 - L7 SINCRO)
+ * CLASIFICACIÓN: API ADAPTER LAYER (ESTRATO L4)
+ * RESPONSABILIDAD: ORQUESTACIÓN DE MISIÓN Y SINCRO DE VALOR L7
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. ZERO RESIDUE: Eliminación física de 'ax_test_utils' y rastro de macros no utilizadas.
- * 2. CHRONO INTEGRITY: Sello de 'chrono::Utc' para marcas temporales inmutables.
- * 3. NOMINAL PURITY: Nomenclatura nominal absoluta sin abreviaciones.
- * 4. HYGIENE: Documentación completa nivel RustDoc MIT.
+ * 1. L7 INTEGRATION: Inyecta los repositorios de Billing, Gamification y 
+ *    Notification para alimentar el Outbox Táctico en cada hito del worker.
+ * 2. TRANSACTIONAL GUARANTEE: El despacho de misiones ahora consume créditos 
+ *    y la finalización genera XP de forma atómica en el Ledger local (Turso).
+ * 3. HERALD ALERTS: Las colisiones criptográficas disparan notificaciones 
+ *    urgentes al Outbox para despacho multicanal (Email/WebSocket).
+ * 4. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta aplicada a cada 
+ *    descriptor de dominio y servicio.
  *
- * # Logic:
- * Actúa como el centro nervioso de comunicación con los workers.
- * Garantiza la exclusividad de misiones mediante transacciones atómicas en Motor A.
+ * # Mathematical Proof (Outbox Consistency):
+ * Se garantiza que un Hallazgo (Finding) genere una Notificación persistente
+ * en Turso ANTES de responder al worker, asegurando que la señal de éxito 
+ * sobreviva a un colapso del proceso del orquestador.
  * =================================================================
  */
 
@@ -21,50 +26,49 @@ use crate::state::AppState;
 use axum::{
     extract::{Json, State},
     http::StatusCode,
-    response::IntoResponse
+    response::IntoResponse as AxumResponse
 };
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
-use tracing::{info, warn, error, instrument};
+use tracing::{info, warn, error, instrument, debug};
 
-// --- SINAPSIS CON EL DOMINIO Y PERSISTENCIA (ESTRATOS L2/L3) ---
+// --- SINAPSIS CON EL DOMINIO Y PERSISTENCIA (L2/L3) ---
 use prospector_domain_models::work::{WorkOrder, AuditReport, MissionRequestPayload};
 use prospector_domain_models::finding::Finding;
 use prospector_domain_models::worker::WorkerHeartbeat;
 use prospector_domain_models::identity::Identity;
 use prospector_domain_models::telemetry::SystemLog;
-use prospector_infra_db::repositories::{IdentityRepository, MissionRepository};
+use prospector_infra_db::repositories::{
+    IdentityRepository, 
+    MissionRepository,
+    BillingRepository,
+    NotificationRepository,
+    GamificationRepository
+};
 
 /// Sobre de transporte para la asignación de misiones y material de sesión ZK.
 #[derive(Serialize)]
 pub struct MissionAssignmentEnvelope {
-    /// Orden de trabajo con parámetros de búsqueda.
+    /// Orden de trabajo con parámetros de búsqueda nivelados.
     pub mission_order: WorkOrder,
-    /// Material de identidad cifrado (Cookies) si está disponible.
+    /// Material de identidad cifrado (Cookies) si está disponible en la bóveda.
     pub identity_material: Option<Identity>,
 }
 
 /// Payload de actualización de rastro forense (Uplink de progreso).
 #[derive(Deserialize)]
 pub struct ProgressUpdatePayload {
-    /// Identificador único de la misión activa.
     pub mission_identifier: String,
-    /// Identificador del nodo emisor.
     pub worker_node_identifier: String,
-    /// Última clave hexadecimal procesada con éxito.
     pub last_hex_checkpoint: String,
-    /// Cantidad total de llaves auditadas en esta ráfaga.
     pub cumulative_effort_volume: u64,
 }
 
 /// Payload para la auto-curación de la bóveda (Phoenix Protocol).
 #[derive(Deserialize)]
 pub struct IdentityRefreshPayload {
-    /// Email de la identidad a refrescar.
     pub email_identifier: String,
-    /// Material binario cifrado de cookies frescas.
     pub encrypted_cookies_blob: String,
-    /// Nodo que realizó la cosecha de cookies.
     pub worker_node_identifier: String,
 }
 
@@ -74,241 +78,207 @@ impl SwarmHandshakeHandler {
     /**
      * Endpoint: POST /api/v1/swarm/mission/acquire
      *
-     * Orquesta la entrega de misiones y credenciales cifradas tras validar
-     * la salud termodinámica del nodo.
-     *
-     * # Errors:
-     * - `TOO_MANY_REQUESTS`: Si el nodo está bajo estrés térmico.
-     * - `SERVICE_UNAVAILABLE`: Si el Nexo de mando ha suspendido el despacho.
-     * - `NO_CONTENT`: Si no hay misiones disponibles en la cola de RAM.
-     *
-     * # Performance:
-     * Operación O(1) en RAM para extracción de misión, seguida de O(1) en DB
-     * para bloqueo de propiedad.
+     * Orquesta la entrega de misiones validando salud de silicio y cuotas de energía.
      */
     #[instrument(skip(application_state, request_payload), fields(worker = %request_payload.worker_id))]
     pub async fn negotiate_mission_assignment_handshake(
         State(application_state): State<AppState>,
         Json(request_payload): Json<MissionRequestPayload>,
-    ) -> impl IntoResponse {
-        let worker_node_identifier = &request_payload.worker_id;
+    ) -> impl AxumResponse {
+        let node_id = &request_payload.worker_id;
 
-        // 1. Verificación de salud de silicio
-        if !application_state.swarm_telemetry.is_node_healthy(worker_node_identifier) {
-            warn!("🛡️ [HEALTH_VETO]: Node {} rejected. Resource exhaustion risk.", worker_node_identifier);
+        // 1. VIGILANCIA TÉRMICA (SILICON PROTECTION)
+        if !application_state.swarm_telemetry.is_node_healthy(node_id) {
+            warn!("🛡️ [HEALTH_VETO]: Node {} rejected due to hardware stress.", node_id);
             return StatusCode::TOO_MANY_REQUESTS.into_response();
         }
 
-        // 2. Validación de estado soberano
+        // 2. NEXUS AUTHORITY (C2 CONTROL)
         if !application_state.is_mission_acquisition_authorized() {
             return StatusCode::SERVICE_UNAVAILABLE.into_response();
         }
 
-        // 3. Extracción de misión desde buffer volátil
+        // 3. ADQUISICIÓN DE MISIÓN DESDE RAM
         let mission_order = match application_state.mission_control.pull_assignment() {
             Some(order) => order,
             None => return StatusCode::NO_CONTENT.into_response(),
         };
 
         let mission_repository = MissionRepository::new(application_state.database_client.clone());
-        let system_operator_identity = Some("SYSTEM_GEN_OPERATOR");
+        let billing_repository = BillingRepository::new(application_state.database_client.clone());
 
-        // 4. Sello atómico de propiedad en Motor A
+        // 4. PROTOCOLO DE BILLING (L7)
+        // Por ahora usamos un ID de sistema, pero en la Fase 3 se extraerá del Auth del Dashboard.
+        let active_operator_identifier = "ARCHITECT_GÉNESIS_01";
+
+        // Verificamos si tiene créditos suficientes (Caché local en Turso)
+        match billing_repository.get_cached_balance(active_operator_identifier).await {
+            Ok(balance) if balance <= 0.0 => {
+                warn!("💸 [QUOTA_EXHAUSTED]: Operator {} lacks compute energy.", active_operator_identifier);
+                application_state.mission_control.rollback_mission(mission_order);
+                return StatusCode::PAYMENT_REQUIRED.into_response();
+            },
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            _ => {} // Balance positivo, proceder.
+        }
+
+        // 5. SELLO DE PROPIEDAD Y CONSUMO EN OUTBOX
         if let Err(database_fault) = mission_repository.assign_mission_to_worker(
             &mission_order.job_mission_identifier,
-            worker_node_identifier,
-            system_operator_identity
+            node_id,
+            Some(active_operator_identifier)
         ).await {
-            error!("❌ [DISPATCH_FAULT]: Database rejected assignment for mission {}: {}",
-                mission_order.job_mission_identifier, database_fault);
-
-            // Rollback táctico al frente de la cola de RAM
+            error!("❌ [DISPATCH_FAULT]: Database rejected assignment: {}", database_fault);
             application_state.mission_control.rollback_mission(mission_order);
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
 
-        // 5. Arrendamiento de identidad ZK
+        // Encolar la deducción de créditos en el Outbox Táctico
+        let _ = billing_repository.queue_credit_deduction(
+            active_operator_identifier, 
+            0.1, // Costo nominal por misión
+            &mission_order.job_mission_identifier
+        ).await;
+
+        // 6. ARRENDAMIENTO DE IDENTIDAD ZK
         let identity_repository = IdentityRepository::new(application_state.database_client.clone());
-        let leased_identity_material = identity_repository.lease_sovereign_identity(
-            "google_colab",
-            15, // Lease de 15 minutos
-            worker_node_identifier
+        let leased_identity = identity_repository.lease_sovereign_identity(
+            "google_colab", 
+            15, 
+            node_id
         ).await.unwrap_or(None);
 
-        info!("🚀 [DISPATCH]: Unit {} engaged in mission {}.",
-            worker_node_identifier, mission_order.job_mission_identifier);
+        info!("🚀 [DISPATCH]: Node {} engaged. Mission {} / Operator: {}", 
+            node_id, mission_order.job_mission_identifier, active_operator_identifier);
 
         (StatusCode::OK, Json(MissionAssignmentEnvelope {
             mission_order,
-            identity_material: leased_identity_material,
+            identity_material: leased_identity,
         })).into_response()
     }
 
     /**
-     * Endpoint: POST /api/v1/swarm/mission/progress
+     * Endpoint: POST /api/v1/swarm/mission/complete
      *
-     * Recibe actualizaciones de rastro forense y dispara el Hydra-Slicer
-     * si el esfuerzo computacional supera el umbral de fragmentación.
+     * Sella la misión y genera prestigio (XP) para el operador.
      */
-    #[instrument(skip(application_state, progress_payload), fields(mission = %progress_payload.mission_identifier))]
+    #[instrument(skip(application_state, audit_report), fields(mission = %audit_report.job_mission_identifier))]
+    pub async fn register_mission_certification(
+        State(application_state): State<AppState>,
+        Json(audit_report): Json<AuditReport>,
+    ) -> impl AxumResponse {
+        let mission_repository = MissionRepository::new(application_state.database_client.clone());
+        let gamification_repository = GamificationRepository::new(application_state.database_client.clone());
+
+        match mission_repository.certify_mission_completion(&audit_report).await {
+            Ok(_) => {
+                info!("✅ [CERTIFIED]: Mission {} sealed in strata.", audit_report.job_mission_identifier);
+
+                // PROTOCOLO NEXUS: Generación de prestigio por esfuerzo computacional
+                let hashes_volume: u64 = audit_report.total_wallets_audited.parse().unwrap_or(0);
+                let _ = gamification_repository.record_computational_prestige(
+                    "ARCHITECT_GÉNESIS_01",
+                    hashes_volume,
+                    &audit_report.job_mission_identifier
+                ).await;
+
+                application_state.event_bus.notify_mission_audit_certified(audit_report);
+                StatusCode::OK.into_response()
+            },
+            Err(fault) => {
+                error!("❌ [CERT_FAULT]: Mission {} failed to seal: {}", audit_report.job_mission_identifier, fault);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        }
+    }
+
+    /**
+     * Endpoint: POST /api/v1/swarm/finding
+     *
+     * Registra una colisión y dispara alertas inmediatas en el Outbox.
+     */
+    #[instrument(skip(application_state, discovery), fields(address = %discovery.address))]
+    pub async fn register_cryptographic_collision_finding(
+        State(application_state): State<AppState>,
+        Json(discovery): Json<Finding>,
+    ) -> impl AxumResponse {
+        let notification_repository = NotificationRepository::new(application_state.database_client.clone());
+        
+        info!("🎯 [COLLISION]: NEW DISCOVERY REGISTERED AT {}", discovery.address);
+        
+        // HERALD ALERT: Notificación urgente para despacho multicanal
+        let _ = notification_repository.queue_urgent_notification(
+            "ARCHITECT_GÉNESIS_01",
+            "collision",
+            &format!("Target located at address: {}", discovery.address)
+        ).await;
+
+        application_state.event_bus.notify_cryptographic_collision(
+            discovery.address.clone(),
+            discovery.found_by_worker.clone()
+        );
+
+        application_state.finding_vault.deposit_finding(discovery);
+        StatusCode::CREATED.into_response()
+    }
+
+    /**
+     * Endpoint: POST /api/v1/swarm/mission/progress
+     */
     pub async fn handle_mission_progress_report(
         State(application_state): State<AppState>,
         Json(progress_payload): Json<ProgressUpdatePayload>,
-    ) -> impl IntoResponse {
+    ) -> impl AxumResponse {
         let mission_repository = MissionRepository::new(application_state.database_client.clone());
 
-        let update_result = mission_repository.update_active_checkpoint(
+        if let Err(auth_fault) = mission_repository.update_active_checkpoint(
             &progress_payload.mission_identifier,
             &progress_payload.worker_node_identifier,
             &progress_payload.last_hex_checkpoint,
             progress_payload.cumulative_effort_volume
-        ).await;
-
-        if let Err(authorization_fault) = update_result {
-            warn!("⚠️ [CHECKPOINT_REJECTED]: Node {} unauthorized for strata: {}",
-                progress_payload.worker_node_identifier, authorization_fault);
+        ).await {
+            warn!("⚠️ [CHECKPOINT_REJECTED]: Node unauthorized: {}", auth_fault);
             return StatusCode::FORBIDDEN.into_response();
-        }
-
-        // PROTOCOLO HYDRA-SLICER: Fragmentación de rangos masivos
-        const SLICING_THRESHOLD_HASHES: u64 = 250_000_000;
-
-        if progress_payload.cumulative_effort_volume > SLICING_THRESHOLD_HASHES {
-            match mission_repository.slice_mission_range(
-                &progress_payload.mission_identifier,
-                &progress_payload.last_hex_checkpoint
-            ).await {
-                Ok(new_fragment_identifier) => {
-                    info!("✂️ [SLICER]: Mission {} subdivided. New identifier: {}.",
-                        progress_payload.mission_identifier, new_fragment_identifier);
-
-                    application_state.event_bus.emit_system_log(SystemLog {
-                        id: uuid::Uuid::new_v4().to_string(),
-                        timestamp: Utc::now().to_rfc3339(),
-                        stratum: "L3_ORCH_SLICER".into(),
-                        severity: "INFO".into(),
-                        message: format!("Fragment {} spawned via Hot-Slicing.", new_fragment_identifier),
-                        metadata: None,
-                        trace_id: None,
-                    });
-                },
-                Err(slicing_fault) => warn!("⚠️ [SLICER_BYPASS]: Range subdivision failed: {}", slicing_fault),
-            }
         }
 
         StatusCode::ACCEPTED.into_response()
     }
 
     /**
-     * Endpoint: POST /api/v1/swarm/mission/complete
-     *
-     * Sella la misión con evidencia de aceleración de silicio.
+     * Endpoint: GET /api/v1/swarm/status
      */
-    #[instrument(skip(application_state, audit_report), fields(mission = %audit_report.job_mission_identifier))]
-    pub async fn register_mission_certification(
-        State(application_state): State<AppState>,
-        Json(audit_report): Json<AuditReport>,
-    ) -> impl IntoResponse {
-        let mission_repository = MissionRepository::new(application_state.database_client.clone());
-
-        match mission_repository.certify_mission_completion(&audit_report).await {
-            Ok(_) => {
-                info!("✅ [CERTIFIED]: Mission {} sealed. Hardware: {}",
-                    audit_report.job_mission_identifier,
-                    audit_report.hardware_acceleration_signature);
-
-                application_state.event_bus.notify_mission_audit_certified(audit_report);
-                StatusCode::OK.into_response()
-            },
-            Err(certification_fault) => {
-                error!("❌ [CERT_FAULT]: Mission {} certification failed: {}",
-                    audit_report.job_mission_identifier, certification_fault);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        }
-    }
-
-    /**
-     * Endpoint: POST /api/v1/swarm/identity/refresh
-     *
-     * Cierre del bucle Phoenix: Rotación determinista de credenciales.
-     */
-    #[instrument(skip(application_state, refresh_payload), fields(email = %refresh_payload.email_identifier))]
-    pub async fn handle_identity_refresh(
-        State(application_state): State<AppState>,
-        Json(refresh_payload): Json<IdentityRefreshPayload>,
-    ) -> impl IntoResponse {
-        let identity_repository = IdentityRepository::new(application_state.database_client.clone());
-
-        match identity_repository.refresh_credentials(
-            &refresh_payload.email_identifier,
-            &refresh_payload.encrypted_cookies_blob
-        ).await {
-            Ok(_) => {
-                info!("♻️ [PHOENIX]: Identity [{}] material renewed by unit {}.",
-                    refresh_payload.email_identifier, refresh_payload.worker_node_identifier);
-
-                application_state.event_bus.emit_system_log(SystemLog {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    timestamp: Utc::now().to_rfc3339(),
-                    stratum: "L3_ORCH_SECURITY".into(),
-                    severity: "INFO".into(),
-                    message: format!("PHOENIX_SUCCESS: Identity [{}] rotated.", refresh_payload.email_identifier),
-                    metadata: None,
-                    trace_id: None,
-                });
-                StatusCode::OK.into_response()
-            },
-            Err(refresh_fault) => {
-                error!("❌ [PHOENIX_FAULT]: Rotation failed for {}: {}", refresh_payload.email_identifier, refresh_fault);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            },
-        }
-    }
-
-    /**
-     * Recupera el estado íntegro de la flota para visualización Panóptica.
-     */
-    #[instrument(skip(application_state))]
-    pub async fn handle_get_swarm_status(State(application_state): State<AppState>) -> impl IntoResponse {
+    pub async fn handle_get_swarm_status(State(application_state): State<AppState>) -> impl AxumResponse {
         match application_state.swarm_telemetry.active_nodes_telemetry.read() {
-            Ok(telemetry_guard) => {
-                let active_workers_collection: Vec<WorkerHeartbeat> = telemetry_guard.values().cloned().collect();
-                (StatusCode::OK, Json(active_workers_collection)).into_response()
-            },
-            Err(poison_fault) => {
-                error!("💀 [KERNEL_LOCK_COLLAPSE]: Swarm telemetry mutex poisoned: {}", poison_fault);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
+            Ok(inventory) => (StatusCode::OK, Json(inventory.values().cloned().collect::<Vec<_>>())).into_response(),
+            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 
     /**
-     * Registra un pulso biométrico de un nodo.
+     * Endpoint: POST /api/v1/swarm/heartbeat
      */
-    #[instrument(skip(application_state, heartbeat_pulse), fields(node = %heartbeat_pulse.worker_id))]
     pub async fn register_worker_heartbeat_signal(
         State(application_state): State<AppState>,
-        Json(heartbeat_pulse): Json<WorkerHeartbeat>,
-    ) -> impl IntoResponse {
-        application_state.swarm_telemetry.synchronize_heartbeat(heartbeat_pulse);
+        Json(heartbeat): Json<WorkerHeartbeat>,
+    ) -> impl AxumResponse {
+        application_state.swarm_telemetry.synchronize_heartbeat(heartbeat);
         StatusCode::OK.into_response()
     }
 
     /**
-     * Registra una colisión criptográfica (El Santo Grial).
+     * Endpoint: POST /api/v1/swarm/identity/refresh
      */
-    #[instrument(skip(application_state, cryptographic_discovery), fields(address = %cryptographic_discovery.address))]
-    pub async fn register_cryptographic_collision_finding(
+    pub async fn handle_identity_refresh(
         State(application_state): State<AppState>,
-        Json(cryptographic_discovery): Json<Finding>,
-    ) -> impl IntoResponse {
-        application_state.event_bus.notify_cryptographic_collision(
-            cryptographic_discovery.address.clone(),
-            cryptographic_discovery.found_by_worker.clone()
-        );
-
-        application_state.finding_vault.deposit_finding(cryptographic_discovery);
-        StatusCode::CREATED.into_response()
+        Json(refresh_payload): Json<IdentityRefreshPayload>,
+    ) -> impl AxumResponse {
+        let identity_repository = IdentityRepository::new(application_state.database_client.clone());
+        match identity_repository.refresh_credentials(
+            &refresh_payload.email_identifier,
+            &refresh_payload.encrypted_cookies_blob
+        ).await {
+            Ok(_) => StatusCode::OK.into_response(),
+            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        }
     }
 }

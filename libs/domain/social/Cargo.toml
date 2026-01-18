@@ -1,0 +1,17 @@
+[package]
+name = "prospector-domain-social"
+version = "0.1.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor de red social técnica: Gestión de perfiles, grafos de afiliados y mensajería cifrada."
+
+[dependencies]
+prospector-domain-models = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
+typeshare = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+
+[lib]
+name = "prospector_domain_social"
+path = "src/lib.rs"

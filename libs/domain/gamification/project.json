@@ -1,0 +1,16 @@
+{
+  "name": "domain-gamification",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/domain/gamification/src",
+  "targets": {
+    "build": {
+      "executor": "@monodon/rust:build",
+      "outputs": ["{options.target-dir}"],
+      "options": { "target-dir": "dist/target/libs/domain/gamification" }
+    },
+    "lint": { "executor": "@monodon/rust:lint" },
+    "test": { "executor": "@monodon/rust:test" }
+  },
+  "tags": ["layer:domain", "type:logic"]
+}

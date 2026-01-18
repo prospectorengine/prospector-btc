@@ -41,7 +41,12 @@
     "build:web": "pnpm i18n:generate && nx build web-dashboard --prod",
     "build:orch": "cargo build --release --bin orchestrator",
     "build:miner": "bash ./scripts/build_miner_static.sh",
-    "preflight": "pnpm i18n:generate && pnpm audit:all && cargo check --workspace"
+    "preflight": "pnpm i18n:generate && pnpm audit:all && cargo check --workspace",
+    "audit:coherence": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-workspace-coherence.ts",
+    "audit:rust": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-rust-coherence.ts",
+    "audit:nx": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-project-json-rules.ts",
+    "audit:boundaries": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-package-boundaries.ts",
+"audit:jest": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-jest-uniformity.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.1",

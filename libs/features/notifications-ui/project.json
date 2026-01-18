@@ -1,0 +1,20 @@
+{
+  "name": "ui-notifications",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/features/notifications-ui/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": { "lintFilePatterns": ["libs/features/notifications-ui/**/*.{ts,tsx}"] }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/features/notifications-ui/jest.config.ts"
+      }
+    }
+  },
+  "tags": ["layer:feature", "type:ui"]
+}

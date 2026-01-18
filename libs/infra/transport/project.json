@@ -1,0 +1,19 @@
+{
+  "name": "infra-transport",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/infra/transport/src",
+  "targets": {
+    "build": {
+      "executor": "@monodon/rust:build",
+      "outputs": ["{options.target-dir}"],
+      "options": { "target-dir": "dist/target/libs/infra/transport" }
+    },
+    "test": {
+      "executor": "@monodon/rust:test",
+      "options": { "target-dir": "dist/target/libs/infra/transport" }
+    },
+    "lint": { "executor": "@monodon/rust:lint" }
+  },
+  "tags": ["layer:infra", "type:util"]
+}

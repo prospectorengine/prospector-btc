@@ -1,0 +1,18 @@
+{
+  "name": "ui-gamification",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/features/gamification-ui/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": { "lintFilePatterns": ["libs/features/gamification-ui/**/*.{ts,tsx}"] }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/features/gamification-ui"],
+      "options": { "jestConfig": "libs/features/gamification-ui/jest.config.ts" }
+    }
+  },
+  "tags": ["layer:feature", "type:ui"]
+}

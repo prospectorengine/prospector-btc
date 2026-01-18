@@ -1,0 +1,19 @@
+{
+  "name": "ui-billing",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/features/billing-ui/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": { "lintFilePatterns": ["libs/features/billing-ui/**/*.{ts,tsx}"] }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/features/billing-ui"],
+      "options": { "jestConfig": "libs/features/billing-ui/jest.config.ts" }
+    }
+  },
+  "tags": ["layer:feature", "type:ui"]
+}

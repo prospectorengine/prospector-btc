@@ -1,21 +1,32 @@
-// INICIO DEL ARCHIVO [apps/orchestrator/src/routes.rs]
+// [apps/orchestrator/src/routes.rs]
 /*!
  * =================================================================
- * APARATO: SOVEREIGN ROUTING MATRIX (V201.0 - GATEWAY UNLOCKED)
+ * APARATO: SOVEREIGN ROUTING MATRIX (V202.0 - L7 TUNNELING)
  * CLASIFICACIÓN: API ADAPTER LAYER (ESTRATO L3)
- * RESPONSABILIDAD: ORQUESTACIÓN DE ESTRATOS VISUALES, TÁCTICOS Y NEURALES
+ * RESPONSABILIDAD: ORQUESTACIÓN DE ESTRATOS TÁCTICOS, NEURALES Y DE USUARIO
  *
- * VISION HIPER-HOLÍSTICA:
- * Integra el 'Neural Data Gateway' (GraphQL) junto al 'Neural Socket'.
- * La topología ahora soporta:
- * 1. REST Táctico (High Frequency).
- * 2. WebSockets (Real-Time Control).
- * 3. GraphQL (Deep Relation Querying).
+ * VISION HIPER-HOLÍSTICA 2026:
+ * 1. L7 EXPANSION: Inyecta los túneles de comunicación para Billing,
+ *    Notifications y Gamification, permitiendo al Dashboard Zenith
+ *    interactuar con el Motor B a través del Relay.
+ * 2. ARCHITECTURAL SEGREGATION: Separa '/swarm' (Nodos) de '/user'
+ *    (Operadores), optimizando las políticas de seguridad por segmento.
+ * 3. NEURAL LINK SYNC: Mantiene el enlace WebSocket para alertas
+ *    instantáneas de colisión y mensajes de comunidad.
+ * 4. HYGIENE: Erradicación total de abreviaciones y rastro #[instrument].
+ *
+ * # Mathematical Proof (Routing Determinism):
+ * La matriz utiliza un esquema de anidamiento jerárquico que garantiza
+ * que el orden de evaluación de los Middlewares sea inmutable,
+ * protegiendo los datos del usuario tras el 'auth_guard' corporativo.
  * =================================================================
  */
 
-// ✅ NUEVO: Importación del módulo 'graphql'
-use crate::handlers::{admin, lab, stream, swarm, assets, visual, telemetry, graphql};
+use crate::handlers::{
+    admin, lab, stream, swarm, assets, visual, telemetry, graphql,
+    // ✅ NUEVOS ADAPTADORES DE ESTRATO L7
+    billing, notification, gamification
+};
 use crate::middleware::{auth_guard, health_guard};
 use crate::state::AppState;
 use axum::{
@@ -27,32 +38,51 @@ use axum::{
 use tower_http::cors::{Any, CorsLayer};
 use std::time::Duration;
 
+/**
+ * Forja el enrutador soberano del sistema.
+ *
+ * # Performance:
+ * Operación O(log N) para la resolución de rutas mediante el motor de Axum.
+ */
 pub fn create_sovereign_router(application_shared_state: AppState) -> Router {
-    // Escudo de Red: Permite CORS para el Dashboard (Vercel) y herramientas de Ops
+    // Escudo de Red: Permite la sinapsis trans-nube (Vercel -> Render)
     let network_security_shield = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
         .max_age(Duration::from_secs(3600));
 
-    // ESTRATO TÁCTICO: Operaciones del Enjambre (Workers)
+    // --- ESTRATO 1: OPERACIONES DEL ENJAMBRE (WORKERS) ---
     let swarm_operations_stratum = Router::new()
-        // Estado del enjambre
         .route("/status", get(swarm::SwarmHandshakeHandler::handle_get_swarm_status))
-        // Negociación de Misión e Identidad
         .route("/mission/acquire", post(swarm::SwarmHandshakeHandler::negotiate_mission_assignment_handshake))
-        // Reporte de Progreso (Checkpointing)
         .route("/mission/progress", post(swarm::SwarmHandshakeHandler::handle_mission_progress_report))
-        // Certificación de Misión (Sellado)
         .route("/mission/complete", post(swarm::SwarmHandshakeHandler::register_mission_certification))
-        // Protocolo Phoenix (Auto-Regeneración de Cookies)
         .route("/identity/refresh", post(swarm::SwarmHandshakeHandler::handle_identity_refresh))
-        // Latidos de Vida (Biometría de Silicio)
         .route("/heartbeat", post(swarm::SwarmHandshakeHandler::register_worker_heartbeat_signal))
-        // Reporte de Colisión (El Santo Grial)
         .route("/finding", post(swarm::SwarmHandshakeHandler::register_cryptographic_collision_finding));
 
-    // ESTRATO DE LABORATORIO Y ADMINISTRACIÓN (Command Center)
+    // --- ESTRATO 2: SERVICIOS AL USUARIO (L7 - ZENITH INTERFACE) ---
+    let user_services_stratum = Router::new()
+        .nest("/billing", Router::new()
+            // Consulta de cuota de energía y créditos remanentes
+            .route("/quota", get(billing::BillingHandler::handle_get_user_quota))
+            // Historial de transacciones de cómputo
+            .route("/history", get(billing::BillingHandler::handle_get_billing_history)))
+
+        .nest("/herald", Router::new()
+            // Inbox de notificaciones y alertas de colisión
+            .route("/notifications", get(notification::NotificationHandler::handle_list_notifications))
+            // Confirmación de lectura con estado TanStack Query
+            .route("/notifications/read", post(notification::NotificationHandler::handle_mark_as_read)))
+
+        .nest("/nexus", Router::new()
+            // Perfil de reputación, XP y nivel de maestría
+            .route("/prestige", get(gamification::GamificationHandler::handle_get_prestige_status))
+            // Ranking global de arqueólogos criptográficos
+            .route("/leaderboard", get(gamification::GamificationHandler::handle_get_leaderboard)));
+
+    // --- ESTRATO 3: LABORATORIO Y ADMINISTRACIÓN (C2 MANDO) ---
     let lab_and_admin_stratum = Router::new()
         .nest("/lab", Router::new()
             .route("/certification/ignite", post(lab::CertificationHandler::handle_certification_ignition))
@@ -61,48 +91,38 @@ pub fn create_sovereign_router(application_shared_state: AppState) -> Router {
             .route("/scenarios", get(admin::ScenarioAdministrationHandler::handle_list_scenarios)))
 
         .nest("/admin", Router::new()
-            // Gestión de Identidad (ZK-Vault)
             .route("/identities", get(admin::ScenarioAdministrationHandler::handle_list_identities).post(admin::ScenarioAdministrationHandler::handle_identity_ingestion))
             .route("/identities/lease", get(admin::ScenarioAdministrationHandler::handle_identity_lease))
             .route("/identities/revoke", post(admin::ScenarioAdministrationHandler::handle_system_mode_transition))
-
-            // Gobernanza de Identidad (IGFS - Release & Purge)
             .route("/identities/release", post(admin::ScenarioAdministrationHandler::handle_identity_force_release))
             .route("/identities/purge", post(admin::ScenarioAdministrationHandler::handle_identity_purge))
-
-            // Observabilidad y C2 (Logs de Aprovisionamiento)
             .route("/provisioning/log", post(admin::ScenarioAdministrationHandler::handle_provisioning_log))
             .route("/diagnostics", get(admin::ScenarioAdministrationHandler::handle_system_diagnostics))
-
-            // Protocolo de Recuperación de Desastres (System Reset)
             .route("/maintenance/purge", post(admin::ScenarioAdministrationHandler::handle_system_purge)));
 
-    // ESTRATO NEURAL DE DATOS (GraphQL Oracle)
-    let graphql_stratum = Router::new()
-        // Endpoint Transaccional (JSON POST)
-        .route("/", post(graphql::handle_graphql_query))
-        // Endpoint Visual (Playground UI)
-        .route("/playground", get(graphql::handle_playground));
+    // --- ESTRATO 4: NEURAL DATA & STREAMING (REAL-TIME) ---
+    let neural_link_stratum = Router::new()
+        .nest("/graphql", Router::new()
+            .route("/", post(graphql::handle_graphql_query))
+            .route("/playground", get(graphql::handle_playground)))
+        .route("/stream/metrics", get(stream::establish_neural_uplink))
+        .route("/telemetry/ingest", post(telemetry::handle_log_ingestion));
 
-    // COMPOSICIÓN GLOBAL (Root Topology)
+    // --- COMPOSICIÓN GLOBAL (ROOT TOPOLOGY) ---
     Router::new()
         .route("/", get(visual::handle_visual_landing))
         .route("/health", get(|| async { "STATUS_OK" }))
         .nest("/api/v1", Router::new()
             .nest("/swarm", swarm_operations_stratum)
+            .nest("/user", user_services_stratum) // ✅ INYECTADO: L7 Services
             .merge(lab_and_admin_stratum)
-            // ✅ NUEVO: Fusión del Estrato GraphQL
-            .nest("/graphql", graphql_stratum)
-            .route("/telemetry/ingest", post(telemetry::handle_log_ingestion))
-            // Singularidad Activa: Endpoint WebSocket (Full Duplex)
-            .route("/stream/metrics", get(stream::establish_neural_uplink))
-            // Middleware de Salud y Autenticación (Escudo Global)
+            .merge(neural_link_stratum)
+            // ESCUDO DE PROTECCIÓN SOBERANA
             .layer(middleware::from_fn_with_state(application_shared_state.clone(), health_guard))
             .layer(middleware::from_fn(auth_guard))
         )
-        // Gateway de Archivos Binarios (Shards)
+        // Entrega de activos binarios (Shards)
         .route("/api/v1/assets/dna/:strata/:filename", get(assets::AssetGatewayHandler::download_shard))
         .layer(network_security_shield)
         .with_state(application_shared_state)
 }
-// FIN DEL ARCHIVO [apps/orchestrator/src/routes.rs]

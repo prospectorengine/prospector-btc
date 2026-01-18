@@ -1,0 +1,14 @@
+[package]
+name = "prospector-domain-content"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prospector-domain-models = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+typeshare = { workspace = true }
+
+[lib]
+name = "prospector_domain_content"
+path = "src/lib.rs"

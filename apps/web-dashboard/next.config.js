@@ -41,7 +41,12 @@ const next_sovereign_configuration = {
     "@prospector/heimdall-ts",
     "@prospector/ui-kit",
     "@prospector/crypto-vault",
-    "@prospector/infra-supabase"
+    "@prospector/infra-supabase",
+    "@prospector/ui-billing",
+    "@prospector/ui-notifications",
+    "@prospector/ui-gamification",
+    "@prospector/ui-content",
+    "@prospector/ui-social"
   ],
 
   /**

@@ -1,0 +1,42 @@
+# [libs/domain/billing/Cargo.toml]
+[package]
+name = "prospector-domain-billing"
+version = "0.1.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor de gobernanza financiera: Gestión soberana de suscripciones, validación de cuotas de silicio y telemetría de créditos."
+license = "MIT"
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
+# Hereda los modelos base y contratos del sistema Prospector.
+prospector-domain-models = { workspace = true }
+
+# --- MOTOR DE TRANSPILACIÓN NEURAL (L2 -> L5) ---
+# ✅ RESOLUCIÓN E0432: Habilita el puente de tipos hacia el Dashboard Zenith.
+typeshare = { workspace = true }
+
+# --- SERIALIZACIÓN Y ESTRATO DE DATOS ---
+# Nivelado para la gestión de payloads financieros y auditoría temporal.
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }
+
+# --- IDENTIDAD Y GESTIÓN DE ERRORES ---
+# Necesario para el rastro inmutable de transacciones en el Outbox.
+uuid = { workspace = true, features = ["v4", "serde"] }
+thiserror = { workspace = true }
+
+# --- OBSERVABILIDAD ---
+# Inyecta trazas en el flujo de facturación para el Panóptico.
+tracing = { workspace = true }
+
+[lib]
+name = "prospector_domain_billing"
+path = "src/lib.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# El aparato ha sido nivelado para soportar el Patrón Outbox.
+# La inclusión de 'uuid' con 'serde' garantiza que cada deducción
+# De créditos sea unívoca y sincronizable con Supabase.
+# =================================================================

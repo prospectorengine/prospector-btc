@@ -2838,6 +2838,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "prospector-domain-billing"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
+ "thiserror 1.0.69",
+ "tracing",
+ "typeshare",
+ "uuid",
+]
+
+[[package]]
+name = "prospector-domain-content"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
+ "typeshare",
+]
+
+[[package]]
 name = "prospector-domain-forensics"
 version = "0.3.0"
 dependencies = [
@@ -2852,6 +2875,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prospector-domain-gamification"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
+ "typeshare",
+]
+
+[[package]]
 name = "prospector-domain-models"
 version = "0.2.0"
 dependencies = [
@@ -2861,6 +2894,30 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "typeshare",
+ "uuid",
+]
+
+[[package]]
+name = "prospector-domain-notification"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
+ "thiserror 1.0.69",
+ "tracing",
+ "typeshare",
+ "uuid",
+]
+
+[[package]]
+name = "prospector-domain-social"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
  "typeshare",
  "uuid",
 ]
@@ -2903,7 +2960,10 @@ dependencies = [
  "libsql",
  "num-bigint",
  "prospector-core-math",
+ "prospector-domain-billing",
+ "prospector-domain-gamification",
  "prospector-domain-models",
+ "prospector-domain-notification",
  "reqwest",
  "serde",
  "serde_json",

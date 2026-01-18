@@ -1,14 +1,21 @@
-/**
+// [libs/infra/db-turso/src/schema.rs]
+/*!
  * =================================================================
- * APARATO: SOVEREIGN DATABASE SCHEMA (V151.0 - KNOWLEDGE STRATA)
+ * APARATO: SOVEREIGN DATABASE SCHEMA (V152.0 - RESILIENCE MASTER)
  * CLASIFICACIÓN: INFRASTRUCTURE LAYER (ESTRATO L3)
  * RESPONSABILIDAD: GOBERNANZA ESTRUCTURAL E IDEMPOTENCIA TOTAL
  *
- * VISION HIPER-HOLÍSTICA:
- * 1. KNOWLEDGE MODULES: Inyecta la tabla de definiciones académicas.
- * 2. HYDRA-SLICER READY: Preserva las columnas de fragmentación de misiones.
- * 3. IDEMPOTENCIA: Gestión de errores para migraciones en caliente en Turso.
- * 4. PERFORMANCE: Índices de aceleración para el despacho masivo.
+ * VISION HIPER-HOLÍSTICA 2026:
+ * 1. STRATEGIC OUTBOX: Inyecta el sustrato físico para el protocolo
+ *    de resiliencia anti-apagón, permitiendo sincronía diferida con Motor B.
+ * 2. NOMINAL PURITY: Erradicación de abreviaciones en definiciones SQL.
+ * 3. IDEMPOTENCIA SOBERANA: Gestión de errores para migraciones en caliente.
+ * 4. PERFORMANCE: Índices de polling O(1) para el Strategic Relay Daemon.
+ *
+ * # Mathematical Proof (Atomicity):
+ * El uso de tablas de Outbox garantiza que las mutaciones en el Ledger Táctico
+ * y el registro de eventos estratégicos ocurran dentro de la misma
+ * transacción ACID, eliminando estados inconsistentes entre nubes.
  * =================================================================
  */
 
@@ -19,7 +26,7 @@ use tracing::{debug, info, instrument, warn};
 /**
  * ESTRATO 1: SOLIDIFICACIÓN (Génesis de Tablas)
  * Define las entidades base del ecosistema Prospector.
- * ✅ INCREMENTAL: Adición de 'TABLE_KNOWLEDGE_MODULES'.
+ * ✅ INCREMENTAL: Adición de 'TABLE_OUTBOX_STRATEGIC'.
  */
 const TACTICAL_TABLES: &[(&str, &str)] = &[
     ("TABLE_JOBS", r#"
@@ -62,7 +69,7 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
             difficulty TEXT NOT NULL,
             duration_minutes INTEGER DEFAULT 0,
             visual_icon TEXT,
-            prerequisites TEXT, -- Identificadores separados por coma
+            prerequisites TEXT,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     "#),
@@ -81,6 +88,17 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
             value_text TEXT,
             value_int INTEGER,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#),
+    ("TABLE_OUTBOX_STRATEGIC", r#"
+        CREATE TABLE IF NOT EXISTS outbox_strategic (
+            outbox_identifier TEXT PRIMARY KEY,
+            payload_json TEXT NOT NULL,
+            target_stratum TEXT NOT NULL, -- Ej: 'BILLING_CONSUMPTION', 'NEXUS_XP'
+            status TEXT DEFAULT 'pending', -- 'pending', 'synced', 'failed'
+            retry_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            processed_at DATETIME
         );
     "#)
 ];
@@ -114,54 +132,63 @@ const EVOLUTIONARY_STRATA: &[(&str, &str)] = &[
 
 /**
  * ESTRATO 3: ENDURECIMIENTO (Índices de Aceleración)
- * Optimiza el acceso para ráfagas de 120MH/s.
  */
 const ACCELERATION_INDEXES: &[(&str, &str)] = &[
     ("IDX_JOBS_OPERATOR", "CREATE INDEX IF NOT EXISTS idx_jobs_operator ON jobs(operator_id);"),
     ("IDX_JOBS_PARENT", "CREATE INDEX IF NOT EXISTS idx_jobs_parent ON jobs(parent_mission_id);"),
     ("IDX_ACADEMY_STATUS", "CREATE INDEX IF NOT EXISTS idx_academy_operator ON academy_progress(operator_id);"),
     ("IDX_AFFILIATE_TREE", "CREATE INDEX IF NOT EXISTS idx_affiliate_parent ON affiliate_network(parent_affiliate_id);"),
-    ("IDX_IDENTITIES_SYNC", "CREATE INDEX IF NOT EXISTS idx_identities_availability ON identities(platform, status, leased_until, cooldown_until);")
+    ("IDX_IDENTITIES_SYNC", "CREATE INDEX IF NOT EXISTS idx_identities_availability ON identities(platform, status, leased_until, cooldown_until);"),
+    // ✅ NUEVO: Índice para el motor de relevo asíncrono
+    ("IDX_OUTBOX_POLLING", "CREATE INDEX IF NOT EXISTS idx_outbox_status_pending ON outbox_strategic(status, created_at);")
 ];
 
 /**
  * Ejecuta la secuencia maestra de sincronización del esquema estructural.
  *
  * # Errors:
- * Retorna error si alguna tabla base falla en solidificarse, indicando
- * un colapso en el enlace con Turso.
+ * Retorna error si alguna tabla base falla en solidificarse.
+ *
+ * # Performance:
+ * Operaciones idempotentes que solo mutan el esquema si es necesario.
  */
 #[instrument(skip(database_connection))]
 pub async fn apply_full_sovereign_schema(database_connection: &Connection) -> Result<()> {
-    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V151.0...");
+    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V152.0...");
 
     solidify_base_strata(database_connection).await?;
     execute_evolutionary_repair(database_connection).await?;
     harden_access_layer(database_connection).await?;
 
-    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V151.0 level and certified.");
+    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V152.0 resilience strata certified.");
     Ok(())
 }
 
-async fn solidify_base_strata(db: &Connection) -> Result<()> {
-    for (identifier, sql) in TACTICAL_TABLES {
+/**
+ * Solidifica las tablas maestras del sistema.
+ */
+async fn solidify_base_strata(database_handle: &Connection) -> Result<()> {
+    for (identifier, sql_statement) in TACTICAL_TABLES {
         debug!("  ↳ Solidifying: {}", identifier);
-        db.execute(*sql, ()).await
+        database_handle.execute(*sql_statement, ()).await
             .with_context(|| format!("CRITICAL_SOLIDIFICATION_FAULT: {}", identifier))?;
     }
     Ok(())
 }
 
-async fn execute_evolutionary_repair(db: &Connection) -> Result<()> {
-    for (identifier, sql) in EVOLUTIONARY_STRATA {
-        match db.execute(*sql, ()).await {
+/**
+ * Ejecuta reparaciones evolutivas sobre columnas existentes.
+ */
+async fn execute_evolutionary_repair(database_handle: &Connection) -> Result<()> {
+    for (identifier, sql_statement) in EVOLUTIONARY_STRATA {
+        match database_handle.execute(*sql_statement, ()).await {
             Ok(_) => info!("  🟢 [REPAIR_OK]: Applied evolutionary stratum {}", identifier),
-            Err(e) => {
-                let message = e.to_string();
-                if message.contains("duplicate column name") {
+            Err(database_error) => {
+                let error_message = database_error.to_string();
+                if error_message.contains("duplicate column name") {
                     debug!("  ⚪ [REPAIR_SKIP]: {} already level.", identifier);
                 } else {
-                    warn!("  ⚠️ [REPAIR_BYPASS]: {} check incomplete: {}", identifier, message);
+                    warn!("  ⚠️ [REPAIR_BYPASS]: {} check incomplete: {}", identifier, error_message);
                 }
             }
         }
@@ -169,10 +196,13 @@ async fn execute_evolutionary_repair(db: &Connection) -> Result<()> {
     Ok(())
 }
 
-async fn harden_access_layer(db: &Connection) -> Result<()> {
-    for (identifier, sql) in ACCELERATION_INDEXES {
+/**
+ * Hardening del estrato de acceso mediante índices tácticos.
+ */
+async fn harden_access_layer(database_handle: &Connection) -> Result<()> {
+    for (identifier, sql_statement) in ACCELERATION_INDEXES {
         debug!("  ↳ Hardening: {}", identifier);
-        db.execute(*sql, ()).await
+        database_handle.execute(*sql_statement, ()).await
             .with_context(|| format!("CRITICAL_HARDENING_FAULT: {}", identifier))?;
     }
     Ok(())

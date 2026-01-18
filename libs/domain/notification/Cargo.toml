@@ -1,0 +1,42 @@
+# [libs/domain/notification/Cargo.toml]
+[package]
+name = "prospector-domain-notification"
+version = "0.1.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor Herald: Orquestación de notificaciones asíncronas, telemetría de mensajería y rastro de lectura con transpilación neural."
+license = "MIT"
+
+[dependencies]
+# --- SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
+# Hereda los contratos de datos y tipos base del ecosistema.
+prospector-domain-models = { workspace = true }
+
+# --- MOTOR DE TRANSPILACIÓN NEURAL (L2 -> L5) ---
+# ✅ RESOLUCIÓN E0432: Inyección de typeshare para habilitar #[typeshare]
+typeshare = { workspace = true }
+
+# --- SERIALIZACIÓN Y ESTRATO DE DATOS ---
+# Nivelado para la gestión de payloads JSON y marcas temporales.
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }
+
+# --- IDENTIDAD Y GESTIÓN DE ERRORES ---
+# Requerido para la generación de identificadores unívocos en el Outbox.
+uuid = { workspace = true, features = ["v4", "serde"] }
+thiserror = { workspace = true }
+
+# --- OBSERVABILIDAD ---
+# Permite el rastro forense en el Panóptico.
+tracing = { workspace = true }
+
+[lib]
+name = "prospector_domain_notification"
+path = "src/lib.rs"
+
+# =================================================================
+# NOTA TÉCNICA:
+# Esta nivelación sella la fractura de enlace estructural al sincronizar
+# las dependencias con el Cargo.toml raíz del monorepo, garantizando
+# que el binario del Orquestador compile en el entorno de Render.
+# =================================================================

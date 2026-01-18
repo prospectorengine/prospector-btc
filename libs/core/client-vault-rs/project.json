@@ -1,0 +1,19 @@
+{
+  "name": "prospector-core-client-vault",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/core/client-vault-rs/src",
+  "targets": {
+    "build": {
+      "executor": "@monodon/rust:build",
+      "outputs": ["{options.target-dir}"],
+      "options": { "target-dir": "dist/target/libs/core/client-vault-rs" }
+    },
+    "test": {
+      "executor": "@monodon/rust:test",
+      "options": { "target-dir": "dist/target/libs/core/client-vault-rs" }
+    },
+    "lint": { "executor": "@monodon/rust:lint" }
+  },
+  "tags": ["layer:core", "type:security"]
+}

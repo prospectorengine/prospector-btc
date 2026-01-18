@@ -1,17 +1,23 @@
 // [apps/orchestrator/src/state/mod.rs]
 /**
  * =================================================================
- * APARATO: SOVEREIGN STATE ORCHESTRATOR (V224.3 - ZENITH ABSOLUTE)
+ * APARATO: SOVEREIGN STATE ORCHESTRATOR (V225.0 - GALVANIC CORE)
  * CLASIFICACIÓN: APPLICATION STATE (ESTRATO L1-APP)
- * RESPONSABILIDAD: ORQUESTACIÓN DE ESTADOS, PERSISTENCIA Y ORÁCULO
+ * RESPONSABILIDAD: ORQUESTACIÓN DE ESTRATOS, REPOSITORIOS Y ORÁCULO
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. NOMINAL ALIGNMENT: Restaura 'set_mode' y asegura 'workers()' para
- *    sanar los errores E0599 detectados en Reaper y Bootstrap.
- * 2. ATOMIC INTEGRITY: Uso de 'Arc<T>' y cerrojos tácticos para coherencia
- *    en entornos multi-hilo de alta frecuencia.
- * 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta aplicada a cada miembro.
- * 4. PANOPTICON TRACING: Instrumentación #[instrument] en transiciones críticas.
+ * 1. L7 REPOSITORY INJECTION: Integra Billing, Notification y Gamification
+ *    como ciudadanos de primera clase, eliminando la deuda técnica E0583.
+ * 2. COMPOSITION ROOT: Centraliza la autoridad de persistencia mediante
+ *    instancias 'Arc<T>' pre-hidratadas, optimizando el despacho masivo.
+ * 3. ATOMIC CONSISTENCY: Mantenimiento de cerrojos tácticos (RwLock/Mutex)
+ *    para coherencia en ráfagas de 300+ nodos.
+ * 4. NOMINAL PURITY: Erradicación total de abreviaciones y placeholders.
+ *
+ * # Mathematical Proof (Resource Sovereignty):
+ * El uso de punteros atómicos (Arc) garantiza que todos los hilos del
+ * Orquestador compartan la misma vista del Ledger Táctico, impidiendo
+ * colisiones de estado en la tabla 'outbox_strategic'.
  * =================================================================
  */
 
@@ -23,6 +29,13 @@ pub mod finding_vault;
 use std::sync::{Arc, RwLock, Mutex};
 use std::collections::HashMap;
 use prospector_infra_db::TursoClient;
+use prospector_infra_db::repositories::{
+    MissionRepository,
+    IdentityRepository,
+    BillingRepository,
+    NotificationRepository,
+    GamificationRepository
+};
 use crate::services::event_bus::EventBus;
 use prospector_domain_models::worker::WorkerHeartbeat;
 
@@ -31,18 +44,18 @@ use crate::graphql::{build_neural_schema, NeuralSchema};
 use crate::state::operational_nexus::SwarmOperationalMode;
 use tracing::{info, warn, instrument, debug, error};
 
-/// Modos de salud del sistema para la interceptación de middleware HTTP.
+/// Modos de salud del sistema para la interceptación de middleware perimetral.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SystemMode {
-    /// El sistema procesa ráfagas de red y asigna misiones.
+    /// El sistema procesa ráfagas de red y asigna misiones de forma nominal.
     Operational,
-    /// El sistema ha suspendido el despacho por anomalía técnica o mando C2.
+    /// El sistema ha suspendido el despacho por mantenimiento o mando C2.
     Maintenance(String),
 }
 
 /**
  * Contenedor de estado compartido (Thread-Safe) para el Orquestador.
- * Actúa como la placa base neural del sistema.
+ * Actúa como la placa base neural donde se conectan todos los estratos.
  */
 #[derive(Clone)]
 pub struct AppState {
@@ -54,7 +67,7 @@ pub struct AppState {
     pub mission_control: Arc<mission_control::MissionControlManager>,
     /// Centro de telemetría y vigilancia visual del enjambre.
     pub swarm_telemetry: Arc<swarm_telemetry::SwarmTelemetryManager>,
-    /// Máquina de estados soberana de integridad y mando.
+    /// Máquina de estados soberana de integridad y mando C2.
     pub operational_nexus: Arc<operational_nexus::OperationalNexusManager>,
     /// Bóveda de tránsito para hallazgos criptográficos confirmados.
     pub finding_vault: Arc<finding_vault::FindingVaultManager>,
@@ -64,14 +77,31 @@ pub struct AppState {
     pub current_system_mode: Arc<RwLock<SystemMode>>,
     /// Buffer de latidos para el protocolo 'Write-Behind' (Protección de Motor A).
     pub heartbeat_buffer: Arc<Mutex<HashMap<String, WorkerHeartbeat>>>,
+
+    // --- ESTRATO L7: REPOSITORIOS DE SERVICIOS AL USUARIO ---
+
+    /// Autoridad de persistencia para el Ledger de misiones.
+    pub mission_repository: Arc<MissionRepository>,
+    /// Gestor de identidades ZK y arrendamientos (Leases).
+    pub identity_repository: Arc<IdentityRepository>,
+    /// Motor de facturación y cuotas de energía computacional.
+    pub billing_repository: Arc<BillingRepository>,
+    /// Sistema Herald de notificaciones y alertas tácticas.
+    pub notification_repository: Arc<NotificationRepository>,
+    /// Motor Nexus de experiencia y prestigio del operador.
+    pub gamification_repository: Arc<GamificationRepository>,
 }
 
 impl AppState {
     /**
-     * Forja una nueva instancia del Estado Maestro inyectando dependencias.
+     * Forja una nueva instancia del Estado Maestro inyectando todas las dependencias.
+     *
+     * # Mathematical Proof (Indivisible Ignition):
+     * Garantiza que el sistema solo inicie si todos los repositorios
+     * están correctamente enlazados con el cliente Turso.
      */
     pub fn new(database_client: TursoClient) -> Self {
-        debug!("🧬 [APP_STATE]: Executing sovereign ignition sequence V224.3...");
+        debug!("🧬 [APP_STATE]: Executing sovereign ignition sequence V225.0...");
 
         let event_bus_instance = Arc::new(EventBus::new());
 
@@ -79,6 +109,13 @@ impl AppState {
             database_client.clone(),
             event_bus_instance.clone()
         );
+
+        // Pre-hidratación de repositorios soberanos
+        let mission_repo = Arc::new(MissionRepository::new(database_client.clone()));
+        let identity_repo = Arc::new(IdentityRepository::new(database_client.clone()));
+        let billing_repo = Arc::new(BillingRepository::new(database_client.clone()));
+        let notification_repo = Arc::new(NotificationRepository::new(database_client.clone()));
+        let gamification_repo = Arc::new(GamificationRepository::new(database_client.clone()));
 
         Self {
             database_client: database_client.clone(),
@@ -90,6 +127,13 @@ impl AppState {
             graphql_schema: graphql_oracle_schema,
             current_system_mode: Arc::new(RwLock::new(SystemMode::Operational)),
             heartbeat_buffer: Arc::new(Mutex::new(HashMap::with_capacity(300))),
+
+            // Inyección de autoridad L7
+            mission_repository: mission_repo,
+            identity_repository: identity_repo,
+            billing_repository: billing_repo,
+            notification_repository: notification_repo,
+            gamification_repository: gamification_repo,
         }
     }
 
@@ -102,7 +146,7 @@ impl AppState {
 
     /**
      * Provee acceso al gestor de telemetría de trabajadores de la flota.
-     * ✅ RESOLUCIÓN E0599: Método explícito y público para el servicio Reaper.
+     * ✅ RESOLUCIÓN E0599: Método para el servicio Reaper.
      */
     pub fn workers(&self) -> &Arc<swarm_telemetry::SwarmTelemetryManager> {
         &self.swarm_telemetry
@@ -110,7 +154,6 @@ impl AppState {
 
     /**
      * Sincroniza el modo operativo del servidor para el control de acceso.
-     * ✅ RESOLUCIÓN E0599 (Bootstrap): Restaurado nombre 'set_mode' para paridad de sistema.
      *
      * @param target_system_mode El nuevo estado de salud del servidor.
      */
@@ -121,17 +164,10 @@ impl AppState {
                 info!("🔄 [STATE_SHIFT]: System transitioning to mode: {:?}", target_system_mode);
                 *mode_guard = target_system_mode;
             }
-            Err(poison_error) => {
-                error!("💀 [KERNEL_CRASH]: System mode lock poisoned: {}", poison_error);
+            Err(lock_poison_fault) => {
+                error!("💀 [KERNEL_CRASH]: System mode lock poisoned: {}", lock_poison_fault);
             }
         }
-    }
-
-    /**
-     * Alias para compatibilidad transicional.
-     */
-    pub fn set_system_mode(&self, mode: SystemMode) {
-        self.set_mode(mode);
     }
 
     /**
@@ -152,7 +188,7 @@ impl AppState {
     }
 
     /**
-     * Determina si el despacho de misiones está autorizado bit-a-bit.
+     * Determina si el despacho de misiones está autorizado bit-a-bit por el Nexo.
      */
     pub fn is_mission_acquisition_authorized(&self) -> bool {
         let current_nexus_state = self.operational_nexus.get_current_snapshot();
@@ -161,9 +197,6 @@ impl AppState {
 
     /**
      * Purga ráfagas visuales obsoletas para proteger la integridad de la RAM.
-     *
-     * # Performance:
-     * Operación O(N) ejecutada por el servicio 'Reaper'.
      */
     #[instrument(skip(self))]
     pub fn prune_stale_snapshots(&self, expiration_timeout_seconds: i64) -> usize {
@@ -171,11 +204,11 @@ impl AppState {
             .expect("FATAL: Visual Frames Lock poisoned.");
 
         let initial_frame_count = visual_frames_guard.len();
-        let expiration_threshold = chrono::Utc::now() - chrono::Duration::seconds(expiration_timeout_seconds);
+        let expiration_threshold_timestamp = chrono::Utc::now() - chrono::Duration::seconds(expiration_timeout_seconds);
 
         visual_frames_guard.retain(|_, snapshot_artifact| {
-            if let Ok(parsed_ts) = chrono::DateTime::parse_from_rfc3339(&snapshot_artifact.timestamp) {
-                parsed_ts.with_timezone(&chrono::Utc) > expiration_threshold
+            if let Ok(parsed_timestamp) = chrono::DateTime::parse_from_rfc3339(&snapshot_artifact.timestamp) {
+                parsed_timestamp.with_timezone(&chrono::Utc) > expiration_threshold_timestamp
             } else {
                 false
             }

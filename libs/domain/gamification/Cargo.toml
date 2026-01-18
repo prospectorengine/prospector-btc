@@ -1,0 +1,16 @@
+[package]
+name = "prospector-domain-gamification"
+version = "0.1.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Motor de experiencia y estatus: Cálculo de niveles basado en throughput computacional y hallazgos arqueológicos."
+
+[dependencies]
+prospector-domain-models = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+typeshare = { workspace = true }
+
+[lib]
+name = "prospector_domain_gamification"
+path = "src/lib.rs"

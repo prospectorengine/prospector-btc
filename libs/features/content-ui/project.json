@@ -1,0 +1,11 @@
+{
+  "name": "ui-content",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/features/content-ui/src",
+  "projectType": "library",
+  "targets": {
+    "lint": { "executor": "@nx/eslint:lint", "options": { "lintFilePatterns": ["libs/features/content-ui/**/*.{ts,tsx}"] } },
+    "test": { "executor": "@nx/jest:jest", "options": { "jestConfig": "libs/features/content-ui/jest.config.ts" } }
+  },
+  "tags": ["layer:feature", "type:ui"]
+}
