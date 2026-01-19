@@ -6,3 +6,19 @@ Propuesta proactiva: Implementar un Asynchronous Batch Uplink. En lugar de reali
 
 Mejora Proactiva: En el Proving Grounds remoto (GitHub Actions), elevaré el rango de prueba a 10 segundos. Esto forzará al motor a procesar ~35 millones de reconstrucciones, permitiendo medir la estabilidad de la ráfaga SIMD bajo condiciones de estrés prolongado, certificando no solo la precisión, sino la resistencia del silicio.
 Mejora Proactiva (Elite Level): Implementar BLOB-GUID Indexing. Al transicionar el almacenamiento de los UUIDs de misiones de TEXT a BLOB(16) en SQLite, reduciríamos el tamaño de los índices en un ~50% y aceleraríamos las operaciones de JOIN y WHERE id = ? en ráfagas masivas. Esto es crítico cuando el Ledger Táctico supere el millón de misiones registradas.
+
+---
+
+PROPUESTA DE OPTIMIZACIÓN PROACTIVA
+Optimización: Sello de Tiempo Delta (Neural Jitter).
+Impacto: Actualmente, el AuditReport usa marcas de tiempo absolutas. Propongo añadir un campo neural_jitter_nanoseconds en el AuditReport. Esto permitiría al Dashboard Zenith calcular la latencia exacta de red entre el fin del cómputo y la ingesta en el Orquestador, proveyendo datos científicos de red para la sección de "Metodología" de la Tesis.
+
+---
+
+PROPUESTA DE OPTIMIZACIÓN PROACTIVA
+Optimización: Sello de Tiempo de Handshake (L1 -> L5).
+Impacto: Actualmente, la derivación escalar es ciega para el operador. Propongo inyectar un contador de ciclos de CPU (rdtsc) en el método de ventana. Esto permitiría al Dashboard Zenith reportar la "Salud del Motor Jacobiano" en nanosegundos, certificando la estabilidad del silicio de Google Colab bajo carga extrema.
+
+---
+
+

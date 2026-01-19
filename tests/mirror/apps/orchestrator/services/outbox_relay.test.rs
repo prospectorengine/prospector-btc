@@ -1,21 +1,46 @@
+// [tests/mirror/apps/orchestrator/services/outbox_relay.test.rs]
 /**
  * =================================================================
- * APARATO: ARCHIVAL BRIDGE INTEGRITY TEST (V1.0 - SOBERANO)
- * CLASIFICACIÓN: TRINITY EVIDENCE
- * OBJETIVO: Certificar la paridad y la lógica de idempotencia 409.
+ * APARATO: OUTBOX RELAY INTEGRITY TEST (V1.0 - SOBERANO)
+ * CLASIFICACIÓN: TRINITY EVIDENCE // ESTRATO L4-MIRROR
+ * RESPONSABILIDAD: CERTIFICACIÓN DE IDEMPOTENCIA Y FLUJO GALVÁNICO
  * =================================================================
  */
 
-#[tokio::test]
-async fn certify_outbox_idempotency_handling() {
-    // Escenario: El Motor B devuelve 409 porque el reporte ya existe.
-    // El motor de relevo debe interpretarlo como un éxito para limpiar Turso.
+#[cfg(test)]
+mod tests {
+    use reqwest::StatusCode;
 
-    let simulated_conflict_status = reqwest::StatusCode::CONFLICT;
+    /**
+     * CERTIFICACIÓN: Manejo de Idempotencia 409.
+     * Valida que el motor considere un conflicto como éxito de sincronía.
+     */
+    #[tokio::test]
+    async fn certify_idempotency_strata_logic() {
+        println!("\n⚖️  [PROVING_GROUNDS]: Auditing Outbox Idempotency Handshake...");
 
-    let is_idempotent_certified = simulated_conflict_status.is_success()
-        || simulated_conflict_status == reqwest::StatusCode::CONFLICT;
+        // Simulación de respuesta de Supabase (Motor B)
+        let simulated_responses = vec![StatusCode::OK, StatusCode::CONFLICT];
 
-    assert!(is_idempotent_certified, "La lógica de idempotencia falló: 409 debe ser verificado como OK.");
-    println!("✅ ARCHIVAL_BRIDGE: Double-step sealing protocol certified.");
+        for status in simulated_responses {
+            let is_success_or_conflict = status.is_success() || status == StatusCode::CONFLICT;
+
+            println!("   🧪 Probing Status Code: [{}]", status);
+            assert!(is_success_or_conflict, "L4_RELAY_FAULT: Non-idempotent status code rejected.");
+        }
+
+        println!("   ✅ [VERDICT]: Idempotency protocol verified. Conflict 409 handled as Synced.");
+    }
+
+    #[test]
+    fn certify_nominal_mapping_table() {
+        let target_stratum = "BILLING_CONSUMPTION";
+        let table_map = match target_stratum {
+            "BILLING_CONSUMPTION" => "billing_credits",
+            _ => "unknown",
+        };
+
+        assert_eq!(table_map, "billing_credits", "Mapping drift detected between L3 and L4.");
+        println!("   ✅ [VERDICT]: Stratum-to-Table mapping synchronized.");
+    }
 }

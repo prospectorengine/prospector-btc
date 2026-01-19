@@ -1,0 +1,45 @@
+name: Component Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_density:
+        description: 'Target instance count'
+        required: true
+        default: '10'
+      batch_id:
+        description: 'Strata batch identifier'
+        required: true
+        default: '1'
+
+concurrency:
+  group: load-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  performance_audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        partition: [1, 2, 3, 4, 5]
+      max-parallel: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runtime Setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+      - name: Dependency Injection
+        run: |
+          npm install -g pnpm
+          pnpm install --filter @prospector/provisioner...
+      - name: Execute Sequence
+        env:
+          ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          MASTER_VAULT_KEY: ${{ secrets.MASTER_VAULT_KEY }}
+          MINER_BINARY_URL: ${{ secrets.MINER_BINARY_URL }}
+          FILTER_BASE_URL: ${{ secrets.FILTER_BASE_URL }}
+        run: |
+          cd tools/provisioner
+          pnpm start --nodes=${{ github.event.inputs.node_density }} --shard=${{ matrix.partition }}

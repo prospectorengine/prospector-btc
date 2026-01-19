@@ -1,23 +1,25 @@
 // [libs/core/math-engine/src/curve.rs]
 /*!
  * =================================================================
- * APARATO: STANDARD JACOBIAN CURVE ENGINE (V130.2 - TRACING FIXED)
+ * APARATO: STANDARD JACOBIAN CURVE ENGINE (V131.0 - ZENITH GOLD)
  * CLASIFICACIÓN: CORE MATH (ESTRATO L1)
  * RESPONSABILIDAD: LEYES DE GRUPO PROYECTIVAS PARA SECP256K1
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. MACRO RESOLUTION: Inyecta 'use tracing::instrument' para sanar el
- *    error de compilación E0433 detectado en el entorno de despliegue.
- * 2. FIXED SYNERGY: Mantiene el enlace bit-perfect con 'subtract_modular'
- *    y 'multiply_by_u64' del motor Montgomery real (field.rs V160.7).
- * 3. CO-Z SOBERANO: Implementa la transformación Meloni real para escalado
- *    de coordenada Z, optimizando el despacho secuencial en Fase 3.
- * 4. NOMINAL PURITY: Nomenclatura descriptiva absoluta (H -> horizontal_distance).
+ * 1. NOMINAL ALIGNMENT: Sincronización total con JacobianPoint V63.0 (x, y, z, is_infinity).
+ * 2. ARITHMETIC OPTIMIZATION: Sustitución de multiplicaciones genéricas por square_modular()
+ *    y multiply_by_u64() para reducir ciclos de reloj en el Hot-Path.
+ * 3. ZERO REGRESSIONS: Mantenimiento de la lógica de trazado forense #[instrument].
+ * 4. MATHEMATICAL RIGOR: Implementación bit-perfect de las fórmulas de adición mixta
+ *    optimizadas para curvas de Weierstrass con a=0.
+ *
+ * # Mathematical Proof (Jacobian Strategy):
+ * El uso de coordenadas Jacobianas (X, Y, Z) donde x = X/Z^2 e y = Y/Z^3 permite
+ * realizar la ley de grupo sin inversiones modulares costosas (O(log p)).
  * =================================================================
  */
 
 use crate::prelude::*;
-// ✅ RESOLUCIÓN DEFINITIVA: Inyección de macros de observabilidad
 use tracing::instrument;
 
 /// Motor unificado para la ejecución de leyes de grupo en coordenadas Jacobianas.
@@ -25,88 +27,88 @@ pub struct UnifiedCurveEngine;
 
 impl UnifiedCurveEngine {
     /**
-     * Realiza la adición de un punto Jacobiano (X1, Y1, Z1) y un punto Afín (x2, y2, Z=1).
+     * Realiza la adición de un punto Jacobiano P1 y un punto Afín P2 (Z2=1).
      *
      * # Mathematical Proof:
-     * Al ser Z2 = 1, la fórmula se optimiza de 11 a 8 Multiplicaciones.
-     * Es el Hot-Path del barrido secuencial escalar.
+     * Al asumir Z2 = 1, el coste computacional se reduce de 11 a 8 multiplicaciones de campo (8M).
+     * Es la operación fundamental del barrido secuencial escalar.
+     *
+     * # Errors:
+     * Retorna el punto infinito si la suma resulta en una singularidad geométrica.
      */
     #[inline(always)]
     #[instrument(level = "trace", skip_all)]
     pub fn add_mixed_deterministic(
-        point_alpha_jacobian: &JacobianPoint,
-        point_beta_affine_x: &FieldElement,
-        point_beta_affine_y: &FieldElement,
+        point_alpha: &JacobianPoint,
+        point_beta_x: &FieldElement,
+        point_beta_y: &FieldElement,
     ) -> JacobianPoint {
-        // Gestión de Elemento Neutro (Punto al Infinito)
-        if point_alpha_jacobian.is_infinity {
+        // Gestión de Elemento Neutro: INF + P = P
+        if point_alpha.is_infinity {
             return JacobianPoint::from_affine(
-                point_beta_affine_x.internal_words,
-                point_beta_affine_y.internal_words
+                point_beta_x.internal_words,
+                point_beta_y.internal_words
             );
         }
 
         // 1. DERIVACIÓN DE COMPONENTES PROYECTIVAS
         // U2 = x2 * Z1^2
-        let z1_coordinate_squared = point_alpha_jacobian.z.square_modular();
-        let projective_u2 = point_beta_affine_x.multiply_modular(&z1_coordinate_squared);
+        let z1_squared = point_alpha.z.square_modular();
+        let u2 = point_beta_x.multiply_modular(&z1_squared);
 
         // S2 = y2 * Z1^3
-        let z1_coordinate_cubed = point_alpha_jacobian.z.multiply_modular(&z1_coordinate_squared);
-        let projective_s2 = point_beta_affine_y.multiply_modular(&z1_coordinate_cubed);
+        let s2 = point_beta_y.multiply_modular(&point_alpha.z.multiply_modular(&z1_squared));
 
         // 2. CÁLCULO DE DIFERENCIAS (Distancias de campo)
-        // horizontal_distance (H) = U2 - X1
-        let horizontal_distance = projective_u2.subtract_modular(&point_alpha_jacobian.x);
-        // vertical_slope_r (R) = S2 - Y1
-        let vertical_slope_r = projective_s2.subtract_modular(&point_alpha_jacobian.y);
+        // h = U2 - X1
+        let horizontal_distance = u2.subtract_modular(&point_alpha.x);
+        // r = S2 - Y1
+        let vertical_slope = s2.subtract_modular(&point_alpha.y);
 
         // 3. VALIDACIÓN DE SINGULARIDADES
         if horizontal_distance.is_zero() {
-            if vertical_slope_r.is_zero() {
-                // Los puntos colisionan en el plano: Proceder a duplicación técnica
-                return Self::double_point_jacobian(point_alpha_jacobian);
+            if vertical_slope.is_zero() {
+                // P1 == P2: Proceder a duplicación puntual
+                return Self::double_point_jacobian(point_alpha);
             } else {
-                // Puntos inversos: El resultado es la identidad (Infinito)
+                // P1 == -P2: El resultado es la identidad
                 return JacobianPoint::infinity();
             }
         }
 
         // 4. GENERACIÓN DE COORDENADAS RESULTANTES (X3, Y3, Z3)
-        let horizontal_distance_squared = horizontal_distance.square_modular();
-        let horizontal_distance_cubed = horizontal_distance_squared.multiply_modular(&horizontal_distance);
-        let intermediate_v_term = point_alpha_jacobian.x.multiply_modular(&horizontal_distance_squared);
+        let h_squared = horizontal_distance.square_modular();
+        let h_cubed = h_squared.multiply_modular(&horizontal_distance);
+        let v_term = point_alpha.x.multiply_modular(&h_squared);
 
-        // X3 = R^2 - H^3 - 2V
-        let slope_r_squared = vertical_slope_r.square_modular();
-        let intermediate_v_doubled = intermediate_v_term.add_modular(&intermediate_v_term);
+        // X3 = r^2 - h^3 - 2V
+        let r_squared = vertical_slope.square_modular();
+        let v_doubled = v_term.multiply_by_u64(2);
 
-        let output_x = slope_r_squared
-            .subtract_modular(&horizontal_distance_cubed)
-            .subtract_modular(&intermediate_v_doubled);
+        let x3 = r_squared
+            .subtract_modular(&h_cubed)
+            .subtract_modular(&v_doubled);
 
-        // Y3 = R * (V - X3) - Y1 * H^3
-        let distance_v_x3 = intermediate_v_term.subtract_modular(&output_x);
-        let slope_r_times_v_x3 = vertical_slope_r.multiply_modular(&distance_v_x3);
-        let y1_times_h_cubed = point_alpha_jacobian.y.multiply_modular(&horizontal_distance_cubed);
-        let output_y = slope_r_times_v_x3.subtract_modular(&y1_times_h_cubed);
+        // Y3 = r * (V - X3) - Y1 * h^3
+        let v_minus_x3 = v_term.subtract_modular(&x3);
+        let first_y_segment = vertical_slope.multiply_modular(&v_minus_x3);
+        let second_y_segment = point_alpha.y.multiply_modular(&h_cubed);
+        let y3 = first_y_segment.subtract_modular(&second_y_segment);
 
-        // Z3 = Z1 * H
-        let output_z = point_alpha_jacobian.z.multiply_modular(&horizontal_distance);
+        // Z3 = Z1 * h
+        let z3 = point_alpha.z.multiply_modular(&horizontal_distance);
 
-        JacobianPoint {
-            x: output_x,
-            y: output_y,
-            z: output_z,
-            is_infinity: false,
-        }
+        JacobianPoint { x: x3, y: y3, z: z3, is_infinity: false }
     }
 
     /**
-     * Implementa la duplicación Jacobiana optimizada para secp256k1 (a=0).
+     * Implementa la duplicación Jacobiana (P + P) optimizada para secp256k1.
      *
-     * # Algoritmo:
-     * Utiliza la fórmula simplificada 3M + 4S.
+     * # Mathematical Proof:
+     * Dado que a = 0 en secp256k1, la fórmula se simplifica a 3M + 4S (Multiplicaciones/Cuadrados).
+     *
+     * # Performance:
+     * Utiliza duplicaciones por adición para evitar multiplicaciones por 2 innecesarias.
      */
     #[inline(always)]
     #[instrument(level = "trace", skip_all)]
@@ -115,79 +117,65 @@ impl UnifiedCurveEngine {
             return JacobianPoint::infinity();
         }
 
-        // x_coordinate_squared = X^2
-        let x_coordinate_squared = point.x.square_modular();
+        // 1. CÁLCULO DE PENDIENTE (M)
+        // M = 3 * X1^2
+        let x1_squared = point.x.square_modular();
+        let slope_m = x1_squared
+            .add_modular(&x1_squared)
+            .add_modular(&x1_squared);
 
-        // slope_m = 3 * X^2
-        let slope_m = x_coordinate_squared
-            .add_modular(&x_coordinate_squared)
-            .add_modular(&x_coordinate_squared);
+        // 2. CÁLCULO DE TÉRMINO DE SOPORTE (S)
+        // S = 4 * X1 * Y1^2
+        let y1_squared = point.y.square_modular();
+        let s_term = point.x.multiply_modular(&y1_squared).multiply_by_u64(4);
 
-        // y_coordinate_squared = Y^2
-        let y_coordinate_squared = point.y.square_modular();
+        // 3. GENERACIÓN DE X3
+        // X3 = M^2 - 2S
+        let m_squared = slope_m.square_modular();
+        let s_doubled = s_term.add_modular(&s_term);
+        let x3 = m_squared.subtract_modular(&s_doubled);
 
-        // term_s = 4 * X * Y^2
-        let x_times_y_squared = point.x.multiply_modular(&y_coordinate_squared);
-        let term_s = x_times_y_squared
-            .add_modular(&x_times_y_squared)
-            .add_modular(&x_times_y_squared)
-            .add_modular(&x_times_y_squared);
+        // 4. GENERACIÓN DE Z3
+        // Z3 = 2 * Y1 * Z1
+        let y1_z1 = point.y.multiply_modular(&point.z);
+        let z3 = y1_z1.add_modular(&y1_z1);
 
-        // X3 = M^2 - 2*S
-        let slope_m_squared = slope_m.square_modular();
-        let term_s_doubled = term_s.add_modular(&term_s);
-        let output_x = slope_m_squared.subtract_modular(&term_s_doubled);
+        // 5. GENERACIÓN DE Y3
+        // Y3 = M * (S - X3) - 8 * Y1^4
+        let y1_fourth = y1_squared.square_modular();
+        let support_y_segment = y1_fourth.multiply_by_u64(8);
 
-        // Z3 = 2 * Y * Z
-        let y_times_z = point.y.multiply_modular(&point.z);
-        let output_z = y_times_z.add_modular(&y_times_z);
+        let s_minus_x3 = s_term.subtract_modular(&x3);
+        let y3 = slope_m.multiply_modular(&s_minus_x3).subtract_modular(&support_y_segment);
 
-        // Y3 = M * (S - X3) - 8 * Y^4
-        let y_coordinate_fourth = y_coordinate_squared.square_modular();
-        let eight_y_fourth = y_coordinate_fourth.multiply_by_u64(8);
-
-        let s_minus_x3 = term_s.subtract_modular(&output_x);
-        let output_y = slope_m
-            .multiply_modular(&s_minus_x3)
-            .subtract_modular(&eight_y_fourth);
-
-        JacobianPoint {
-            x: output_x,
-            y: output_y,
-            z: output_z,
-            is_infinity: false,
-        }
+        JacobianPoint { x: x3, y: y3, z: z3, is_infinity: false }
     }
 
     /**
-     * ADICIÓN CO-Z (MELONI): ESCALADO DE COORDENADA Z.
+     * ADICIÓN CO-Z (FASE INICIAL): ESCALADO DE COORDENADA Z.
      *
      * # Mathematical Proof:
-     * Transforma P y Q para que compartan la coordenada Z.
-     * Si P=(X1, Y1, Z1) y Q=(X2, Y2, 1), entonces escalamos Q:
-     * Q' = (X2*Z1^2, Y2*Z1^3, Z1).
-     * Ahora P y Q' tienen Z_new = Z1, permitiendo adiciones de 5 multiplicaciones.
+     * Transforma un punto afín Q para que comparta la coordenada Z del punto P.
+     * Q' = (x_q * Z_p^2, y_q * Z_p^3, Z_p).
+     * Esto es el requisito fundamental para el motor Meloni 5M (L2-Strategy).
      */
     #[inline(always)]
     #[instrument(level = "trace", skip_all)]
     pub fn add_co_z_initial_step(
-        p: &JacobianPoint,
-        q_affine_x: &FieldElement,
-        q_affine_y: &FieldElement
+        point_p: &JacobianPoint,
+        point_q_x: &FieldElement,
+        point_q_y: &FieldElement
     ) -> JacobianPoint {
-        let z_coordinate_squared = p.z.square_modular();
+        let z_squared = point_p.z.square_modular();
+        let z_cubed = point_p.z.multiply_modular(&z_squared);
 
-        // Scaled X = x2 * Z1^2
-        let scaled_x = q_affine_x.multiply_modular(&z_coordinate_squared);
-
-        // Scaled Y = y2 * Z1^3
-        let z_coordinate_cubed = p.z.multiply_modular(&z_coordinate_squared);
-        let scaled_y = q_affine_y.multiply_modular(&z_coordinate_cubed);
+        let scaled_x = point_q_x.multiply_modular(&z_squared);
+        let scaled_y = point_q_y.multiply_modular(&z_cubed);
 
         JacobianPoint {
             x: scaled_x,
             y: scaled_y,
-            z: p.z,
+            z: point_p.z,
             is_infinity: false,
         }
     }

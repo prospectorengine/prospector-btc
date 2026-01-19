@@ -1,0 +1,91 @@
+# =================================================================
+# APARATO: ASSET OPTIMIZATION & RELEASE ENGINE (V22.1 - RELEASE READY)
+# CLASIFICACIÓN: OPS INFRASTRUCTURE (ESTRATO L6)
+# RESPONSABILIDAD: FORJA, SELLADO Y DISTRIBUCIÓN AUTOMÁTICA
+# =================================================================
+
+name: Asset Optimization Engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_profile:
+        description: 'Target Optimization Profile'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+concurrency:
+  group: asset-compiler-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-C target-feature=+crt-static"
+
+jobs:
+  forge_and_publish:
+    name: "🏗️ Forge and Publish Linux-MUSL"
+    runs-on: ubuntu-latest
+    permissions: # Permisos necesarios para crear el Release
+      contents: write
+
+    steps:
+      - name: "🛰️ Adquire Source Strata"
+        uses: actions/checkout@v4
+
+      - name: "🦀 Initialize Sovereign Rust Toolchain"
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: "💾 Synchronize Dependency Cache"
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ github.event.inputs.build_profile }}
+
+      - name: "🏗️ Execute Static Compilation"
+        run: |
+          cargo build \
+            --profile ${{ github.event.inputs.build_profile }} \
+            --bin miner-worker \
+            --target x86_64-unknown-linux-musl
+
+      # ✅ RESOLUCIÓN DE ERROR SINTÁCTICO: Comillas añadidas para proteger la cadena
+      - name: "🔪 Post-Processing: Binary Stripping"
+        if: ${{ github.event.inputs.build_profile == 'release' }}
+        run: strip target/x86_64-unknown-linux-musl/release/miner-worker
+
+      - name: "🛡️ Generate Integrity Seal (SHA-256)"
+        id: generate_hash
+        run: |
+          BINARY_PATH="target/x86_64-unknown-linux-musl/${{ github.event.inputs.build_profile }}/miner-worker"
+          SHA_HASH=$(sha256sum $BINARY_PATH | awk '{ print $1 }')
+          echo "artifact_hash=$SHA_HASH" >> $GITHUB_OUTPUT
+          echo "[L6_AUDIT] Binary Integrity Seal: $SHA_HASH"
+
+      # ✅ MEJORA PROACTIVA: Publicación automática en Release
+      - name: "🚀 Distribute to Strategic Release"
+        if: ${{ github.event.inputs.build_profile == 'release' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-gold
+          name: "Gold Master Build (Automated)"
+          body: |
+            ### 🛠️ Telemetry Report
+            - **Profile:** ${{ github.event.inputs.build_profile }}
+            - **Integrity Seal:** `${{ steps.generate_hash.outputs.artifact_hash }}`
+            - **Target Platform:** Linux-MUSL x86_64 (Standard Colab)
+          files: target/x86_64-unknown-linux-musl/release/miner-worker
+          fail_on_unmatched_files: true
+          generate_release_notes: false
+
+      - name: "📦 Archive Artifact (Backup)"
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimized-miner-${{ github.event.inputs.build_profile }}
+          path: target/x86_64-unknown-linux-musl/${{ github.event.inputs.build_profile }}/miner-worker
+          retention-days: 7

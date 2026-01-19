@@ -1,17 +1,16 @@
 // [libs/core/math-engine/src/arithmetic.rs]
 /*!
  * =================================================================
- * APARATO: CORE ARITHMETIC KERNEL (V120.1 - REPAIRED & OPTIMIZED)
+ * APARATO: CORE ARITHMETIC KERNEL (V121.0 - SOBERANO & DOCUMENTADO)
  * CLASIFICACIÓN: CORE MATH (ESTRATO L1)
  * RESPONSABILIDAD: OPERACIONES U256 CON ACARREO PARALELO Y CONVERSIÓN
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. RESTORATION: Se restaura 'convert_u128_to_u256_be' para sanar el
- *    error de compilación E0432 en el Hub Central.
- * 2. ADX/BMI2 ENABLED: Mantiene las optimizaciones de bajo nivel para
- *    arquitecturas x86_64.
- * 3. NOMINAL PURITY: Erradicación total de abreviaciones.
- * 4. HYGIENE: Cero residuos de compilación.
+ * 1. ZERO ABBREVIATIONS: Renombrado de 'be' a 'big_endian' en todo el módulo.
+ * 2. FULL DOCUMENTATION: Sella los errores de 'missing_docs' (Severity 8)
+ *    cumpliendo con el estándar doctoral.
+ * 3. ASM INTEGRITY: Mantiene el bloque unsafe para optimizaciones ADX/BMI2.
+ * 4. HYGIENE: Eliminación de rastro de código muerto y consistencia nominal.
  * =================================================================
  */
 
@@ -24,11 +23,17 @@ pub const U256_BYTE_SIZE: usize = 32;
 
 /**
  * Incrementa un buffer Big-Endian de 32 bytes sumándole un valor de 64 bits.
- * Optimizado mediante Intel ADX (ADCX/ADOX) en hardware compatible.
+ *
+ * # Performance
+ * Optimizado mediante instrucciones Intel ADX (ADCX/ADOX) en arquitecturas x86_64,
+ * permitiendo la propagación del acarreo en un solo ciclo de ejecución por limb.
+ *
+ * # Errors
+ * Retorna `MathError::InvalidKeyFormat` si la suma excede el espacio de 256 bits (Overflow).
  */
 #[inline(always)]
 #[cfg(target_arch = "x86_64")]
-pub fn add_u64_to_u256_be(
+pub fn add_u64_to_u256_big_endian(
     buffer: &mut [u8; 32],
     value_to_add: u64
 ) -> Result<(), MathError> {
@@ -69,10 +74,13 @@ pub fn add_u64_to_u256_be(
 }
 
 /**
- * Fallback seguro para arquitecturas no x86_64.
+ * Fallback seguro para adición con acarreo en arquitecturas no x86_64.
+ *
+ * # Performance
+ * Complejidad O(N) sobre el número de palabras (4 limbs de 64 bits).
  */
 #[cfg(not(target_arch = "x86_64"))]
-pub fn add_u64_to_u256_be(
+pub fn add_u64_to_u256_big_endian(
     buffer: &mut [u8; 32],
     value_to_add: u64
 ) -> Result<(), MathError> {
@@ -92,14 +100,16 @@ pub fn add_u64_to_u256_be(
 
 /**
  * Transforma un valor de 128 bits en un buffer Big-Endian de 256 bits.
- * Requerido para la inicialización de rangos y tests de laboratorio.
+ *
+ * # Mathematical Proof
+ * Garantiza que el valor de 128 bits ocupe los 16 bytes menos significativos
+ * del buffer de 256 bits, manteniendo el padding de ceros en la parte alta.
  */
 #[inline(always)]
 #[must_use]
-pub fn convert_u128_to_u256_be(value_to_convert: u128) -> [u8; 32] {
+pub fn convert_u128_to_u256_big_endian(value_to_convert: u128) -> [u8; 32] {
     let mut result_buffer = [0u8; 32];
     let value_bytes_big_endian = value_to_convert.to_be_bytes();
-    // Inyectamos los 16 bytes en la parte baja del buffer de 32 bytes
     result_buffer[16..32].copy_from_slice(&value_bytes_big_endian);
     result_buffer
 }
@@ -108,7 +118,8 @@ pub fn convert_u128_to_u256_be(value_to_convert: u128) -> [u8; 32] {
  * Compara dos escalares de 256 bits en formato Big-Endian.
  */
 #[inline]
-pub fn compare_u256_be(
+#[must_use]
+pub fn compare_u256_big_endian(
     alpha_buffer: &[u8; 32],
     beta_buffer: &[u8; 32]
 ) -> Ordering {
@@ -118,14 +129,18 @@ pub fn compare_u256_be(
 /**
  * Codificación hexadecimal acelerada para reportes forenses.
  */
+#[must_use]
 pub fn fast_hex_encode(bytes_to_encode: &[u8]) -> String {
     hex::encode(bytes_to_encode)
 }
 
 /**
  * Adición completa U256 + U256 -> U256 mod 2^256.
+ *
+ * # Errors
+ * Retorna error si la suma total desborda el límite de 256 bits.
  */
-pub fn add_u256_be(
+pub fn add_u256_big_endian(
     alpha_operand: &[u8; 32],
     beta_operand: &[u8; 32]
 ) -> Result<[u8; 32], MathError> {
@@ -150,7 +165,7 @@ pub fn add_u256_be(
 /**
  * Sustracción U256 - U256 con detección de préstamo (Borrow).
  */
-pub fn subtract_u256_be(
+pub fn subtract_u256_big_endian(
     minuend: &[u8; 32],
     subtrahend: &[u8; 32]
 ) -> Result<[u8; 32], MathError> {
@@ -177,8 +192,18 @@ pub fn subtract_u256_be(
     Ok(result_buffer)
 }
 
+/**
+ * Mapea un buffer Big-Endian de 32 bytes a la representación interna de 4 palabras de 64 bits.
+ *
+ * # Performance
+ * Operación O(1) de transposición de bytes.
+ *
+ * # Mathematical Proof
+ * Garantiza que la significancia de los bytes se preserve al pasar de base 256 a base 2^64.
+ */
 #[inline(always)]
-pub fn convert_u256_be_to_limbs_u64(bytes_input: &[u8; 32]) -> [u64; 4] {
+#[must_use]
+pub fn convert_u256_big_endian_to_limbs_u64(bytes_input: &[u8; 32]) -> [u64; 4] {
     let mut limbs_output = [0u64; 4];
     for (index, limb_reference) in limbs_output.iter_mut().enumerate() {
         let start = (3 - index) * 8;
@@ -187,8 +212,15 @@ pub fn convert_u256_be_to_limbs_u64(bytes_input: &[u8; 32]) -> [u64; 4] {
     limbs_output
 }
 
+/**
+ * Transforma la representación interna de limbs en un buffer Big-Endian de 32 bytes.
+ *
+ * # Performance
+ * Operación O(1). Esencial para el sellado de direcciones Bitcoin en el Hot-Path.
+ */
 #[inline(always)]
-pub fn convert_limbs_u64_to_u256_be(limbs_input: &[u64; 4]) -> [u8; 32] {
+#[must_use]
+pub fn convert_limbs_u64_to_u256_big_endian(limbs_input: &[u64; 4]) -> [u8; 32] {
     let mut bytes_output = [0u8; 32];
     for (index, limb_value) in limbs_input.iter().enumerate() {
         let start = (3 - index) * 8;

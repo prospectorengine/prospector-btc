@@ -7,7 +7,7 @@
  */
 
 use prospector_infra_db::TursoClient;
-use prospector_infra_db::schema::apply_full_sovereign_schema;
+
 
 #[tokio::test]
 async fn certify_knowledge_strata_materialization() {

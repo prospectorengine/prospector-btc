@@ -1,18 +1,18 @@
 // [libs/domain/models-rs/src/work.rs]
 /*!
  * =================================================================
- * APARATO: WORK DOMAIN MODELS (V151.0 - PRODUCTION MASTER)
+ * APARATO: WORK DOMAIN MODELS (V152.0 - PLAYGROUND ENABLED)
  * CLASIFICACIÓN: DOMAIN MODELS (ESTRATO L2)
  * RESPONSABILIDAD: DEFINICIÓN DE CONTRATOS SOBERANOS DE MISIÓN
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. SILICON EVIDENCE: Inyecta 'hardware_acceleration_signature' en el
- *    AuditReport para certificar el uso de ráfagas SIMD/ADX.
- * 2. PRODUCTION PURITY: Erradicación total de placeholders y comentarios
- *    de depuración. Datos reales para despliegue Cloud-Native.
- * 3. TYPESHARE SYNERGY: Mapeo determinista de tipos numéricos para el
- *    Frontend Next.js 16, garantizando paridad en la Tríada.
- * 4. NOMINAL PRECISION: Nomenclatura nominal absoluta en todos los campos.
+ * 1. SMOKE-TEST CAPABILITY: Inyecta la variante 'Playground' en el motor
+ *    polimórfico para validación de handshakes sin consumo de CPU real.
+ * 2. SILICON EVIDENCE: Mantiene la firma 'hardware_acceleration_signature'
+ *    para certificar el uso de ráfagas SIMD/ADX en el reporte final.
+ * 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta en todos los campos
+ *    (mb -> megabytes, id -> identifier).
+ * 4. HYGIENE: Erradicación de placeholders y cumplimiento estricto de Typeshare.
  *
  * # Mathematical Proof (Audit Immutability):
  * El AuditReport actúa como el bloque de sellado de una misión. Al incluir
@@ -24,7 +24,7 @@
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
 
-/// Clasificación geológica de los estratos de direcciones UTXO.
+/// Clasificación geológica de los estratos de direcciones UTXO para la búsqueda.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum TargetStrata {
@@ -65,7 +65,7 @@ pub enum SearchStrategy {
         #[typeshare(serialized_as = "number")]
         seed_range_end: u64,
     },
-    /// Resolución de logaritmo discreto mediante Pollard's Lambda.
+    /// Resolución de logaritmo discreto mediante Pollard's Lambda (Kangaroo).
     KangarooLambda {
         target_public_key_hexadecimal: String,
         #[typeshare(serialized_as = "number")]
@@ -77,58 +77,75 @@ pub enum SearchStrategy {
         #[typeshare(serialized_as = "number")]
         processing_batch_size: usize,
     },
+    /// ✅ NUEVO: Modo de validación de Handshake y Telemetría.
+    /// No realiza cómputo pesado; simula una ráfaga para certificar el enlace neural.
+    Playground {
+        #[typeshare(serialized_as = "number")]
+        target_mock_iterations: u64,
+        diagnostic_seed: String,
+    },
 }
 
-/// Orden de Trabajo soberana despachada por el Orquestador.
+/// Orden de Trabajo soberana despachada por el Orquestador al Enjambre.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkOrder {
-    /// Identificador único universal de la misión.
+    /// Identificador único universal de la misión de auditoría.
     pub job_mission_identifier: String,
-    /// Tiempo de concesión antes de que la misión se considere huérfana.
+    /// Tiempo de concesión antes de que la misión sea reclamada por el servicio Reaper.
     #[typeshare(serialized_as = "number")]
     pub lease_duration_seconds: u64,
-    /// Configuración técnica del motor de búsqueda.
+    /// Configuración técnica del motor de búsqueda estratégica.
     pub strategy: SearchStrategy,
-    /// Estrato de datos UTXO objetivo.
+    /// Estrato de datos UTXO (Censo) objetivo de la misión.
     pub required_strata: TargetStrata,
 }
 
 /// Reporte inmutable de certificación de misión finalizada.
+/// Constituye la prueba física de la auditoría para la Tesis Doctoral.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditReport {
+    /// Identificador de la misión certificada.
     pub job_mission_identifier: String,
+    /// Identificador del nodo que completó el cómputo.
     pub worker_node_identifier: String,
     /// Volumen total de llaves auditadas (Representado como String para BigInt L5).
     pub total_wallets_audited: String,
-    /// Duración física del cómputo.
+    /// Duración física del cómputo en milisegundos.
     #[typeshare(serialized_as = "number")]
     pub execution_duration_milliseconds: u64,
+    /// Estado final del proceso (ej: "completed", "halted_by_preemption").
     pub final_mission_status: String,
-    /// Último escalar procesado (Punto de reanudación).
+    /// Último escalar procesado o firma de estado del pool (Punto de reanudación).
     pub audit_footprint_checkpoint: String,
+    /// Marca de tiempo UTC de la cristalización del reporte.
     pub completed_at_timestamp: String,
-    /// Hashes por milisegundo alcanzados.
+    /// Hashes por milisegundo alcanzados durante la ráfaga.
     pub average_computational_efficiency: f64,
-    /// Firma técnica del hardware utilizado (SIMD, ADX, Software).
+    /// Firma técnica del hardware utilizado (ej: ELITE_SIMD_ADX).
     pub hardware_acceleration_signature: String,
 }
 
-/// Payload de solicitud de misión (Handshake Táctico).
+/// Payload de solicitud de misión (Handshake Táctico Worker -> Server).
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MissionRequestPayload {
+    /// ID unívoco del nodo solicitante.
     pub worker_id: String,
+    /// Telemetría de capacidad física para el balanceo inteligente de carga.
     pub hardware_capacity: NodeHardwareCapacity,
 }
 
-/// Telemetría de capacidad física del nodo solicitante.
+/// Telemetría de capacidad física y silicio del nodo solicitante.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeHardwareCapacity {
+    /// Memoria RAM física disponible en el contenedor.
     #[typeshare(serialized_as = "number")]
-    pub ram_available_mb: u64,
+    pub ram_available_megabytes: u64,
+    /// Número de núcleos lógicos detectados por el sistema operativo.
     pub cpu_cores: u32,
+    /// Flag de soporte para instrucciones vectoriales avanzadas (AVX2/ADX).
     pub supports_avx2: bool,
 }

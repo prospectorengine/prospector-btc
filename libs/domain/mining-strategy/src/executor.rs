@@ -1,32 +1,30 @@
 // [libs/domain/mining-strategy/src/executor.rs]
 /*!
  * =================================================================
- * APARATO: STRATEGY EXECUTOR MASTER (V262.2 - SWISS WATCH SEAL)
+ * APARATO: STRATEGY EXECUTOR MASTER (V263.0 - PLAYGROUND READY)
  * CLASIFICACIÓN: DOMAIN LOGIC (ESTRATO L2)
- * RESPONSABILIDAD: ORQUESTACIÓN POLIMÓRFICA Y CERTIFICACIÓN DE HARDWARE
+ * RESPONSABILIDAD: ORQUESTACIÓN POLIMÓRFICA Y SIMULACIÓN TÁCTICA
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. ZERO RESIDUE: Eliminación del import 'debug' no utilizado para satisfacer
- *    la política de higiene estricta de rustc.
+ * 1. SMOKE-TEST CAPABILITY: Inyecta el motor 'Playground' para certificar
+ *    la integridad de la Tríada sin saturación de silicio.
  * 2. CONTRACT ALIGNMENT: Implementación bit-perfect del inicializador de
- *    'AuditReport', inyectando la firma técnica 'hardware_acceleration_signature'.
- * 3. NOMINAL PURITY: Erradicación de abreviaciones. 'sk' -> 'private_key_handle'.
- * 4. DETERMINISM: Resolución del rastro de diccionario ignorando formalmente
- *    el tamaño del lote en el despacho.
+ *    'AuditReport' nivelado con el campo 'hardware_acceleration_signature'.
+ * 3. NOMINAL PURITY: Erradicación total de abreviaciones.
+ * 4. PANOPTICON SYNC: Telemetría enriquecida para visualización en L5.
  *
- * # Mathematical Proof (Hardware Traceability):
- * Al encapsular la firma de hardware en el reporte inmutable, el sistema
- * certifica la veracidad del esfuerzo computacional (Proof of Computation),
- * permitiendo auditar la eficiencia energética y algorítmica de la campaña.
+ * # Mathematical Proof (Deterministic Orchestration):
+ * El ejecutor actúa como un despachador de orden superior. La integridad
+ * de la misión se garantiza mediante la captura de señales de interrupción
+ * (AtomicBool), permitiendo un sellado atómico del reporte final.
  * =================================================================
  */
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicBool, Ordering};
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use chrono::Utc;
-// ✅ RESOLUCIÓN RESIDUO: 'debug' eliminado de los imports de tracing
-use tracing::{info, warn, error, instrument};
+use tracing::{info, warn, error, instrument, debug};
 
 // --- SINAPSIS CON EL NÚCLEO MATEMÁTICO (L1) ---
 use prospector_core_math::hardware::is_optimized_arithmetic_supported;
@@ -76,7 +74,7 @@ impl StrategyExecutor {
      *
      * # Performance:
      * - Latencia de despacho: O(1).
-     * - El throughput escala proporcionalmente al conjunto de instrucciones AVX2/ADX.
+     * - Playground mode: Cero carga de CPU, latencia simulada para validación de red.
      */
     #[instrument(
         skip_all,
@@ -101,11 +99,9 @@ impl StrategyExecutor {
 
         // 1. AUDITORÍA DE SILICIO (Hardware Awareness V2.1)
         let is_silicon_optimized = is_optimized_arithmetic_supported();
-        let hardware_acceleration_signature = if is_silicon_optimized {
-            info!("🚀 [EXECUTOR]: ELITE_HARDWARE_DETECTED. Engaging SIMD 4-Way & Co-Z Strata.");
+        let mut hardware_acceleration_signature = if is_silicon_optimized {
             "ELITE_SIMD_ADX"
         } else {
-            warn!("🐢 [EXECUTOR]: LEGACY_HARDWARE. Engaging Scalar Software Fallback.");
             "STANDARD_SW"
         };
 
@@ -173,7 +169,6 @@ impl StrategyExecutor {
             },
 
             // MOTOR EPSILON: ENTROPY DICTIONARY (Brainwallets)
-            // ✅ RESOLUCIÓN WARNING: 'processing_batch_size' ignorado formalmente
             SearchStrategy::Dictionary { dataset_resource_locator, processing_batch_size: _ } => {
                 audit_trail_checkpoint_hex = EntropyDictionaryEngine::execute_dictionary_audit(
                     std::slice::from_ref(dataset_resource_locator),
@@ -182,6 +177,28 @@ impl StrategyExecutor {
                     effort_telemetry_accumulator.clone(),
                     collision_handler
                 );
+            },
+
+            // ✅ NUEVO: MOTOR PLAYGROUND (Misión de Humo)
+            // Simulación táctica para certificar handshakes.
+            SearchStrategy::Playground { target_mock_iterations, diagnostic_seed } => {
+                info!("🎮 [PLAYGROUND]: Executing simulated strata audit. Seed: {}", diagnostic_seed);
+                hardware_acceleration_signature = "VIRTUAL_SIMULATION";
+
+                // Simulación de ráfaga: Incremento progresivo para testear Dashboard L5
+                for iteration in 0..*target_mock_iterations {
+                    if global_termination_signal.load(Ordering::Relaxed) {
+                        break;
+                    }
+
+                    if iteration % 1000 == 0 {
+                        effort_telemetry_accumulator.fetch_add(1000, Ordering::Relaxed);
+                        debug!("👾 [PLAYGROUND_PULSE]: {} iterations simulated.", iteration);
+                        // Pequeño retardo para no terminar instantáneamente y permitir ver el progreso
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
+                }
+                audit_trail_checkpoint_hex = format!("playground_certified_{}", diagnostic_seed);
             }
         }
 
@@ -210,7 +227,6 @@ impl StrategyExecutor {
         );
 
         // 4. CRISTALIZACIÓN DEL REPORTE INMUTABLE (SSoT)
-        // ✅ RESOLUCIÓN ERROR E0063: Inyección del campo hardware_acceleration_signature
         AuditReport {
             job_mission_identifier: mission_order.job_mission_identifier.clone(),
             worker_node_identifier,

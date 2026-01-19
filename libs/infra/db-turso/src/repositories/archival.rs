@@ -1,9 +1,9 @@
-// INICIO DEL ARCHIVO [libs/infra/db-turso/src/repositories/archival.rs]
+// [libs/infra/db-turso/src/repositories/archival.rs]
 /*!
  * =================================================================
- * APARATO: ARCHIVAL LEDGER REPOSITORY (V160.1 - DOCS FIXED)
+ * APARATO: ARCHIVAL STRATA REPOSITORY (V200.1 - OUTBOX READY)
  * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
- * RESPONSABILIDAD: DRENAJE Y SELLADO DE MISIONES CERTIFICADAS
+ * RESPONSABILIDAD: ACCESO ATÓMICO AL BUFFER DE SINCRONIZACIÓN
  * =================================================================
  */
 
@@ -18,71 +18,69 @@ pub struct ArchivalRepository {
 }
 
 impl ArchivalRepository {
-    /**
-     * Construye una nueva instancia del repositorio de archivo.
-     */
     pub fn new(client: TursoClient) -> Self {
         Self { database_client: client }
     }
 
     /**
-     * Recupera un lote de misiones pendientes de migración.
+     * Recupera una ráfaga de eventos pendientes del Outbox Táctico.
+     * Prioriza los registros más antiguos para mantener la linealidad de la Tesis.
      */
     #[instrument(skip(self))]
-    pub async fn fetch_pending_strategic_migration(&self, batch_limit: i32) -> Result<Vec<Value>, DbError> {
-        let connection = self.database_client.get_connection()?;
+    pub async fn fetch_pending_outbox_batch(&self, batch_limit: i64) -> Result<Vec<Value>, DbError> {
+        let database_connection = self.database_client.get_connection()?;
 
         let query_statement = r#"
-            SELECT
-                id, worker_id, total_hashes_effort, execution_duration_ms,
-                audit_footprint_checkpoint, started_at, completed_at, strategy_type
-            FROM jobs
-            WHERE status = 'completed' AND archived_at IS NULL
-            ORDER BY completed_at ASC
+            SELECT outbox_identifier, payload_json, target_stratum, retry_count
+            FROM outbox_strategic
+            WHERE status = 'pending' AND retry_count < 10
+            ORDER BY created_at ASC
             LIMIT ?1
         "#;
 
-        let mut rows = connection.query(query_statement, params![batch_limit]).await?;
-        let mut migration_batch = Vec::new();
+        let mut query_results = database_connection.query(query_statement, params![batch_limit]).await?;
+        let mut outbox_batch_collection = Vec::new();
 
-        while let Some(row) = rows.next().await? {
-            let entry = json!({
-                "original_job_id": row.get::<String>(0)?,
-                "worker_node_id": row.get::<String>(1).unwrap_or_else(|_| "node_unregistered".to_string()),
-                "computational_effort": row.get::<String>(2)?, // Soberanía U256
-                "duration_ms": row.get::<i64>(3)?,
-                "forensic_checkpoint": row.get::<String>(4)?,
-                "timestamp_start": row.get::<String>(5).unwrap_or_default(),
-                "timestamp_end": row.get::<String>(6).unwrap_or_default(),
-                "strategy_applied": row.get::<String>(7)?
-            });
-            migration_batch.push(entry);
+        while let Some(data_row) = query_results.next().await? {
+            outbox_batch_collection.push(json!({
+                "outbox_identifier": data_row.get::<String>(0)?,
+                "payload_json": data_row.get::<String>(1)?,
+                "target_stratum": data_row.get::<String>(2)?,
+                "retry_count": data_row.get::<i64>(3)?
+            }));
         }
 
-        Ok(migration_batch)
+        Ok(outbox_batch_collection)
     }
 
     /**
-     * Sella los registros locales marcándolos como archivados.
+     * Sella un registro como sincronizado, liberando el buffer táctico.
      */
-    pub async fn seal_archived_records(&self, mission_identifiers: Vec<String>) -> Result<(), DbError> {
-        if mission_identifiers.is_empty() { return Ok(()); }
+    #[instrument(skip(self, outbox_identifier))]
+    pub async fn seal_synchronized_event(&self, outbox_identifier: &str) -> Result<(), DbError> {
+        let database_connection = self.database_client.get_connection()?;
 
-        let connection = self.database_client.get_connection()?;
+        database_connection.execute(
+            "UPDATE outbox_strategic SET status = 'synced', processed_at = CURRENT_TIMESTAMP WHERE outbox_identifier = ?1",
+            params![outbox_identifier]
+        ).await?;
 
-        for identifier in &mission_identifiers {
-            connection.execute(
-                "UPDATE jobs SET archived_at = CURRENT_TIMESTAMP WHERE id = ?1",
-                params![identifier.clone()]
-            ).await?;
-        }
+        debug!("💾 [ARCHIVAL_REPO]: Event {} sealed in tactical strata.", outbox_identifier);
+        Ok(())
+    }
 
-        debug!(
-            "💾 [ARCHIVAL_REPO]: Tactical strata synchronized. {} units sealed.",
-            mission_identifiers.len()
-        );
+    /**
+     * Incrementa el contador de fallos ante rechazos del Motor B.
+     */
+    #[instrument(skip(self, outbox_identifier))]
+    pub async fn report_sync_failure(&self, outbox_identifier: &str) -> Result<(), DbError> {
+        let database_connection = self.database_client.get_connection()?;
+
+        database_connection.execute(
+            "UPDATE outbox_strategic SET retry_count = retry_count + 1 WHERE outbox_identifier = ?1",
+            params![outbox_identifier]
+        ).await?;
 
         Ok(())
     }
 }
-// FIN DEL ARCHIVO [libs/infra/db-turso/src/repositories/archival.rs]

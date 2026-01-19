@@ -1,24 +1,23 @@
 // [libs/domain/mining-strategy/src/engines/satoshi_xp_engine.rs]
 /*!
  * =================================================================
- * APARATO: SATOSHI WINDOWS XP FORENSIC ENGINE (V214.0 - SILICON ALIGNED)
+ * APARATO: SATOSHI WINDOWS XP FORENSIC ENGINE (V214.2 - SIMD ALIGNED)
  * CLASIFICACIÓN: DOMAIN STRATEGY (ESTRATO L2)
  * RESPONSABILIDAD: RECONSTRUCCIÓN DETERMINISTA DE ENTROPÍA 2009 (AVX2)
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. SCOPE RECOVERY: Resolución definitiva de E0425. Declaración explícita
- *    de puntos Jacobianos por carril (lane) para ignición SIMD.
- * 2. NOMINAL PURITY: Erradicación total de abreviaciones. 'md_pool' -> 'message_digest_pool',
- *    'qpc' -> 'query_performance_counter'.
- * 3. HYDRA-CRANK V3: Sincronización bit-perfecta con 'JacobianPointVector4' (V71.0)
- *    utilizando descriptores 'x_strata_vector' y 'y_strata_vector'.
- * 4. HYGIENE: Cero residuos de compilación y documentación técnica doctoral.
+ * 1. NOMINAL SYNC: Resuelve los errores de campo (x_strata_vector) sincronizando
+ *    con JacobianPointVector4 V72.0 (campos x, y, z).
+ * 2. ARITHMETIC ALIGNMENT: Uso de 'internal_words_to_big_endian_bytes' para
+ *    paridad con el motor de campo modular Fp V173.0.
+ * 3. HEAP OPTIMIZATION: Mantenimiento de buffer local por hilo para mutación
+ *    in-place del ADN, maximizando el uso de caché L1/L2.
+ * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral y rastro #[instrument].
  *
  * # Mathematical Proof (OpenSSL 0.9.8h Stirring Bug):
- * El fallo reside en que 'RAND_add' saturaba un pool de 1024 bytes con 250KB de
- * datos de sistema (HKEY_PERFORMANCE_DATA). Al ser el buffer de entrada 244 veces
- * mayor que el pool, el estado final es una función determinista de los últimos
- * bytes inyectados, donde la única variable de alta entropía es el contador QPC.
+ * El aparato replica la agitación del pool de 1024 bytes mediante XOR y SHA-1.
+ * Debido a la saturación (250KB inyectados en 1KB), el estado final es una
+ * función directa del QPC, permitiendo la reducción del espacio de búsqueda.
  * =================================================================
  */
 
@@ -28,7 +27,7 @@ use sha1::{Sha1, Digest};
 use prospector_core_math::prelude::*;
 use prospector_core_probabilistic::sharded::ShardedFilter;
 use crate::executor::FindingHandler;
-use tracing::{info, warn, error, instrument, debug};
+use tracing::{info, warn, error, instrument};
 use rayon::prelude::*;
 
 /// Tamaño del Message Digest Pool interno de la librería ssleay32.dll de 2009.
@@ -37,7 +36,7 @@ const OPENSSL_MESSAGE_DIGEST_POOL_SIZE: usize = 1024;
 const SHA1_CHUNK_SIZE_BYTES: usize = 20;
 /// Desplazamiento del Query Performance Counter en el bloque de rendimiento de Windows.
 const PERFORMANCE_COUNTER_STRATA_OFFSET: usize = 24;
-/// Tamaño mínimo certificado del buffer de ADN para Windows XP SP3 (US-English).
+/// Tamaño mínimo certificado del buffer de ADN para Windows XP SP3.
 const MINIMUM_CERTIFIED_DNA_SIZE: usize = 250_000;
 /// Factor de aceleración vectorial (4 carriles AVX2 contiguos).
 const VECTOR_BURST_WIDTH: u64 = 4;
@@ -48,16 +47,9 @@ impl SatoshiWindowsXpForensicEngine {
     /**
      * Ejecuta una auditoría forense masiva reconstruyendo trayectorias de entropía de 2009.
      *
-     * # Errors:
-     * - Retorna `error_invalid_dna_artifact` si el material genético es insuficiente.
-     *
      * # Performance:
-     * - Complejidad: O(N/4) derivaciones Jacobianas mediante ráfagas SIMD.
-     * - Throughput: Maximizado mediante saturación de registros YMM de 256 bits.
-     *
-     * # Mathematical Proof:
-     * Satura el pool de entropía simulado y extrae 32 bytes de escalar privado
-     * siguiendo el protocolo exacto de 'EC_KEY_generate_key' de la época.
+     * - Throughput: Maximizado mediante ráfagas SIMD 4-Way sobre registros YMM.
+     * - Memory: Zero-allocation dentro del Hot-Loop de agitación.
      */
     #[allow(clippy::too_many_arguments)]
     #[instrument(
@@ -79,103 +71,83 @@ impl SatoshiWindowsXpForensicEngine {
         collision_handler: &H,
     ) -> String {
         if dna_template_blueprint.len() < MINIMUM_CERTIFIED_DNA_SIZE {
-            error!("❌ [XP_ENGINE]: CRITICAL_DNA_VOID. Blueprint size violates integrity standards.");
+            error!("❌ [XP_ENGINE]: CRITICAL_DNA_VOID. Artifact size insufficient.");
             return String::from("error_invalid_dna_artifact");
         }
 
-        info!("🧬 [XP_ENGINE]: Initiating SIMD-Accelerated Forensic Reconstruction V214.0.");
+        info!("🧬 [XP_ENGINE]: Initiating SIMD-Accelerated Forensic Reconstruction V214.2.");
 
-        // BUCLE MAESTRO PARALELIZADO: Un segundo de historia por cada hilo de Rayon.
+        // BUCLE MAESTRO PARALELIZADO: Segmentación por segundos de Uptime histórico.
         (uptime_seconds_start..uptime_seconds_end)
             .into_par_iter()
             .for_each(|current_uptime_second| {
 
                 if global_stop_signal.load(Ordering::Relaxed) { return; }
 
-                // Alocación local de ADN para mutación in-place (Optimización de Stack).
-                let mut local_active_dna_strata = dna_template_blueprint.to_vec();
+                let mut local_dna_buffer = dna_template_blueprint.to_vec();
                 let mut current_qpc_micro_tick: u64 = 0;
 
-                // BUCLE DE RÁFAGA VECTORIAL: Procesa 4 micro-ticks simultáneamente.
                 while current_qpc_micro_tick < hardware_clock_frequency {
-
                     if global_stop_signal.load(Ordering::Relaxed) { break; }
 
-                    let mut reconstructed_metadata_collection = [String::new(), String::new(), String::new(), String::new()];
-                    let mut valid_scalar_handles_collection = Vec::with_capacity(4);
+                    let mut reconstructed_metadata = [String::new(), String::new(), String::new(), String::new()];
+                    let mut private_keys_in_burst = Vec::with_capacity(4);
 
-                    // 1. RECONSTRUCCIÓN DE ESCALARES POR CARRIL
+                    // 1. FASE DE AGITACIÓN (4 Trayectorias Concurrentes)
                     for lane_index in 0..4 {
-                        let query_performance_counter_value: u64 = (current_uptime_second * hardware_clock_frequency) +
-                                                                   current_qpc_micro_tick + lane_index as u64;
+                        let query_performance_counter: u64 = (current_uptime_second * hardware_clock_frequency) +
+                                                            current_qpc_micro_tick + lane_index as u64;
 
-                        // Inyección del contador en el estrato de memoria.
-                        local_active_dna_strata[PERFORMANCE_COUNTER_STRATA_OFFSET..PERFORMANCE_COUNTER_STRATA_OFFSET + 8]
-                            .copy_from_slice(&query_performance_counter_value.to_le_bytes());
+                        local_dna_buffer[PERFORMANCE_COUNTER_STRATA_OFFSET..PERFORMANCE_COUNTER_STRATA_OFFSET + 8]
+                            .copy_from_slice(&query_performance_counter.to_le_bytes());
 
                         let mut message_digest_pool = [0u8; OPENSSL_MESSAGE_DIGEST_POOL_SIZE];
-                        let mut circular_cursor_position: usize = 0;
+                        let mut circular_cursor: usize = 0;
 
-                        // Simulación de agitación del pool de OpenSSL.
-                        Self::mix_entropy_strata(
-                            &local_active_dna_strata,
-                            &mut message_digest_pool,
-                            &mut circular_cursor_position
-                        );
+                        Self::mix_entropy_strata(&local_dna_buffer, &mut message_digest_pool, &mut circular_cursor);
 
-                        let derived_private_key_material = Self::extract_private_key_32_bytes(&message_digest_pool);
-                        reconstructed_metadata_collection[lane_index] = format!("satoshi_xp:qpc_{}", query_performance_counter_value);
+                        let private_key_material = Self::extract_private_key_32_bytes(&message_digest_pool);
+                        reconstructed_metadata[lane_index] = format!("satoshi_xp:qpc_{}", query_performance_counter);
 
-                        if let Ok(private_key_handle) = SafePrivateKey::from_bytes(&derived_private_key_material) {
-                            valid_scalar_handles_collection.push(private_key_handle);
+                        if let Ok(key) = SafePrivateKey::from_bytes(&private_key_material) {
+                            private_keys_in_burst.push(key);
                         }
                     }
 
-                    // 2. PROCESAMIENTO GEOMÉTRICO VECTORIZADO (L1-SIMD)
-                    if valid_scalar_handles_collection.len() == 4 {
-                        // ✅ RESOLUCIÓN E0425: Declaración explícita de puntos para el constructor SIMD.
-                        let jacobian_point_lane_0 = JacobianPoint::from_private(&valid_scalar_handles_collection[0]);
-                        let jacobian_point_lane_1 = JacobianPoint::from_private(&valid_scalar_handles_collection[1]);
-                        let jacobian_point_lane_2 = JacobianPoint::from_private(&valid_scalar_handles_collection[2]);
-                        let jacobian_point_lane_3 = JacobianPoint::from_private(&valid_scalar_handles_collection[3]);
+                    // 2. FASE GEOMÉTRICA VECTORIZADA (L1-SIMD)
+                    if private_keys_in_burst.len() == 4 {
+                        let p0 = JacobianPoint::from_private(&private_keys_in_burst[0]);
+                        let p1 = JacobianPoint::from_private(&private_keys_in_burst[1]);
+                        let p2 = JacobianPoint::from_private(&private_keys_in_burst[2]);
+                        let p3 = JacobianPoint::from_private(&private_keys_in_burst[3]);
 
-                        // Ignición de la unidad SIMD Zenith.
-                        let vectorized_points_unit = JacobianPointVector4::from_elements(
-                            &jacobian_point_lane_0,
-                            &jacobian_point_lane_1,
-                            &jacobian_point_lane_2,
-                            &jacobian_point_lane_3
-                        );
+                        // ✅ RESOLUCIÓN NOMINAL: Sincronía con los campos x, y, z de L1
+                        let vectorized_unit = JacobianPointVector4::from_elements(&p0, &p1, &p2, &p3);
 
-                        // 3. VERIFICACIÓN ISOMÓRFICA Y REPORTE
                         for lane_index in 0..4 {
-                            // Sincronía con x_strata_vector y y_strata_vector (V71.0)
-                            let affine_x_strata = vectorized_points_unit.x_strata_vector.extract_and_reduce_lane(lane_index);
-                            let affine_y_strata = vectorized_points_unit.y_strata_vector.extract_and_reduce_lane(lane_index);
+                            let affine_x = vectorized_unit.x.extract_and_reduce_lane(lane_index);
+                            let affine_y = vectorized_unit.y.extract_and_reduce_lane(lane_index);
 
-                            let coordinate_x_bytes = affine_x_strata.internal_words_to_be_bytes();
-                            let coordinate_y_bytes = affine_y_strata.internal_words_to_be_bytes();
+                            let x_bytes = affine_x.internal_words_to_big_endian_bytes();
+                            let y_bytes = affine_y.internal_words_to_big_endian_bytes();
 
-                            // Formato Era Satoshi (2009): Siempre No-Comprimido (0x04).
-                            let mut uncompressed_identity_buffer = [0u8; 65];
-                            uncompressed_identity_buffer[0] = 0x04;
-                            uncompressed_identity_buffer[1..33].copy_from_slice(&coordinate_x_bytes);
-                            uncompressed_identity_buffer[33..65].copy_from_slice(&coordinate_y_bytes);
+                            // Formato Satoshi Era (2009): Uncompressed (0x04)
+                            let mut uncompressed_pubkey = [0u8; 65];
+                            uncompressed_pubkey[0] = 0x04;
+                            uncompressed_pubkey[1..33].copy_from_slice(&x_bytes);
+                            uncompressed_pubkey[33..65].copy_from_slice(&y_bytes);
 
-                            let candidate_hash160_digest = prospector_core_math::hashing::hash160(&uncompressed_identity_buffer);
+                            let candidate_hash160 = prospector_core_math::hashing::hash160(&uncompressed_pubkey);
 
-                            if target_census_filter.contains(&candidate_hash160_digest) {
-                                let derived_bitcoin_address = prospector_core_gen::address_legacy::pubkey_from_affine_to_address(
-                                    &coordinate_x_bytes,
-                                    &coordinate_y_bytes
-                                );
+                            if target_census_filter.contains(&candidate_hash160) {
+                                let address = prospector_core_gen::address_legacy::pubkey_from_affine_to_address(&x_bytes, &y_bytes);
 
-                                warn!("🎯 [XP_COLLISION]: Satoshi lineage pattern match at address: {}", derived_bitcoin_address);
+                                warn!("🎯 [XP_COLLISION]: Match confirmed in Satoshi lineage: {}", address);
 
                                 collision_handler.on_finding(
-                                    derived_bitcoin_address,
-                                    valid_scalar_handles_collection[lane_index].clone(),
-                                    reconstructed_metadata_collection[lane_index].clone()
+                                    address,
+                                    private_keys_in_burst[lane_index].clone(),
+                                    reconstructed_metadata[lane_index].clone()
                                 );
                             }
                         }
@@ -183,69 +155,55 @@ impl SatoshiWindowsXpForensicEngine {
 
                     current_qpc_micro_tick += VECTOR_BURST_WIDTH;
 
-                    // Telemetría: Reporte atómico optimizado cada 10,000 iteraciones.
                     if current_qpc_micro_tick % 10_000 == 0 {
                         effort_telemetry_accumulator.fetch_add(10_000, Ordering::Relaxed);
                     }
                 }
             });
 
-        let final_processed_uptime_second = uptime_seconds_end;
-        debug!("📍 [CHECKPOINT]: Satoshi-XP archaeology finalized at {}s uptime.", final_processed_uptime_second);
-
-        format!("satoshi_xp_checkpoint_uptime_{}", final_processed_uptime_second)
+        format!("satoshi_xp_checkpoint_uptime_{}", uptime_seconds_end)
     }
 
     /**
-     * Simulación bit-perfecta de 'RAND_add' (OpenSSL 0.9.8h).
-     * Recrea el algoritmo de XOR y hashing SHA-1 circular.
+     * Simulación bit-perfecta de 'RAND_add' de OpenSSL 0.9.8h.
      */
     #[inline(always)]
     pub fn mix_entropy_strata(
-        system_input_buffer: &[u8],
-        message_digest_pool: &mut [u8; OPENSSL_MESSAGE_DIGEST_POOL_SIZE],
-        circular_cursor: &mut usize
+        input: &[u8],
+        pool: &mut [u8; OPENSSL_MESSAGE_DIGEST_POOL_SIZE],
+        cursor: &mut usize
     ) {
-        let mut sha1_context = Sha1::new();
-
-        for byte_chunk in system_input_buffer.chunks(SHA1_CHUNK_SIZE_BYTES) {
-            for (byte_offset, &input_byte) in byte_chunk.iter().enumerate() {
-                let write_index = (*circular_cursor + byte_offset) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
-                message_digest_pool[write_index] ^= input_byte;
+        let mut sha1_engine = Sha1::new();
+        for chunk in input.chunks(SHA1_CHUNK_SIZE_BYTES) {
+            for (offset, &byte) in chunk.iter().enumerate() {
+                let pos = (*cursor + offset) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
+                pool[pos] ^= byte;
             }
-
-            sha1_context.update(*message_digest_pool);
-            let temporary_digest_artifact = sha1_context.finalize_reset();
-
-            for (byte_offset, &digest_byte) in temporary_digest_artifact.iter().enumerate() {
-                let write_index = (*circular_cursor + byte_offset) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
-                message_digest_pool[write_index] = digest_byte;
+            sha1_engine.update(*pool);
+            let digest = sha1_engine.finalize_reset();
+            for (offset, &byte) in digest.iter().enumerate() {
+                let pos = (*cursor + offset) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
+                pool[pos] = byte;
             }
-
-            *circular_cursor = (*circular_cursor + SHA1_CHUNK_SIZE_BYTES) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
+            *cursor = (*cursor + SHA1_CHUNK_SIZE_BYTES) % OPENSSL_MESSAGE_DIGEST_POOL_SIZE;
         }
     }
 
     /**
-     * Extrae un escalar de 32 bytes del pool mediante el protocolo de stretching SHA-1.
+     * Extrae 32 bytes de clave privada siguiendo el Stretching SHA-1 de 2009.
      */
     #[inline(always)]
     #[must_use]
-    pub fn extract_private_key_32_bytes(message_digest_pool: &[u8; OPENSSL_MESSAGE_DIGEST_POOL_SIZE]) -> [u8; 32] {
-        let mut final_private_scalar_buffer = [0u8; 32];
-        let mut sha1_context = Sha1::new();
-
-        // Extracción Bloque Alfa (20 bytes)
-        sha1_context.update(message_digest_pool);
-        let first_hash_segment = sha1_context.finalize_reset();
-        final_private_scalar_buffer[0..20].copy_from_slice(&first_hash_segment);
-
-        // Extracción Bloque Beta (Stretching de 12 bytes mediante contador de extensión)
-        sha1_context.update(first_hash_segment);
-        sha1_context.update([0x01u8]);
-        let second_hash_segment = sha1_context.finalize();
-        final_private_scalar_buffer[20..32].copy_from_slice(&second_hash_segment[0..12]);
-
-        final_private_scalar_buffer
+    pub fn extract_private_key_32_bytes(pool: &[u8; OPENSSL_MESSAGE_DIGEST_POOL_SIZE]) -> [u8; 32] {
+        let mut key_buffer = [0u8; 32];
+        let mut sha1_engine = Sha1::new();
+        sha1_engine.update(pool);
+        let first_20 = sha1_engine.finalize_reset();
+        key_buffer[0..20].copy_from_slice(&first_20);
+        sha1_engine.update(first_20);
+        sha1_engine.update([0x01u8]);
+        let last_12 = sha1_engine.finalize();
+        key_buffer[20..32].copy_from_slice(&last_12[0..12]);
+        key_buffer
     }
 }
