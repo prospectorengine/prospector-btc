@@ -1,4 +1,4 @@
-# [libs/domain/mining-strategy/Cargo.toml]
+
 [package]
 name = "prospector-domain-strategy"
 version = "0.3.2"
@@ -8,7 +8,6 @@ description = "Núcleo estratégico de Prospector: Orquestación de motores Jaco
 
 [dependencies]
 # --- SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
-# Hereda la infraestructura completa nivelada a Zenith V2026
 prospector-core-math = { workspace = true }
 prospector-core-gen = { workspace = true }
 prospector-core-probabilistic = { workspace = true }
@@ -17,13 +16,11 @@ prospector-domain-forensics = { workspace = true }
 prospector-blockchain-client = { workspace = true }
 
 # --- MOTOR ASÍNCRONO Y PARALELISMO ---
-# Requerido para la orquestación de ráfagas y hilos de CPU
 futures = "0.3"
 tokio = { workspace = true }
 rayon = { workspace = true }
 
 # --- SERIALIZACIÓN Y CRIPTOGRAFÍA ---
-# Nivelado para la gestión de ADN sintético y hashes SHA-256/SHA-1
 serde = { workspace = true }
 serde_json = { workspace = true }
 hex = { workspace = true }
@@ -32,7 +29,6 @@ sha1 = { workspace = true }
 chrono = { workspace = true }
 
 # --- OBSERVABILIDAD Y GESTIÓN DE ERRORES ---
-# ✅ NIVELACIÓN SOBERANA: Habilitación de macros e instrumentación para el Panóptico
 tracing = { workspace = true, features = ["attributes"] }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
@@ -52,59 +48,68 @@ path = "src/lib.rs"
 # MATRIZ DE CERTIFICACIÓN ESTRATÉGICA (PROTOCOL TRINITY)
 # =================================================================
 
-# 1. Certificación de Arqueología Satoshi-XP (OpenSSL 0.9.8h)
+# 1. Arqueología Satoshi-XP (OpenSSL 0.9.8h)
 [[test]]
 name = "satoshi_xp_engine_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/satoshi_xp_engine_test.rs"
 
-# 2. Validación de Recuperación Android LCG (CVE-2013-7372)
+# 2. Recuperación Android LCG (CVE-2013-7372)
 [[test]]
 name = "android_lcg_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/android_lcg_test.rs"
 
-# 3. Certificación del Orquestador Maestro (Proving Grounds Ready)
+# 3. Aceleración SIMD Android (Hot-Path)
+[[test]]
+name = "android_lcg_simd_test"
+path = "../../../tests/mirror/libs/domain/mining_strategy/engines/android_lcg_simd.test.rs"
+
+# 4. Orquestador Maestro (Proving Grounds Ready)
 [[test]]
 name = "sequential_engine_master"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/sequential_engine_master.test.rs"
 
-# 4. Validación de Derivación Dual (Comp/Uncomp)
+# 5. Validación de Derivación Dual (Comp/Uncomp)
 [[test]]
 name = "forensic_dual_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/forensic_dual_test.rs"
 
-# 5. Prueba de Estabilidad de Memoria Estática (Alloc-Free)
+# 6. Estabilidad de Memoria Estática (Alloc-Free)
 [[test]]
 name = "sequential_alloc_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/sequential_alloc_test.rs"
 
-# 6. Escrutinio de Límites de Lote Montgomery (Magazine Boundaries)
+# 7. Límites de Lote Montgomery (Magazine Boundaries)
 [[test]]
 name = "sequential_boundary_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/sequential_boundary_test.rs"
 
-# 7. Test de Integración de Ejecución de Estrategias
+# 8. Integración de Ejecución (Legacy Logic)
 [[test]]
 name = "tests_execution"
 path = "src/tests_execution.rs"
 
-# ✅ NIVELACIÓN SOBERANA V203: Único target para el motor secuencial
+# 9. Target Nominal Core para el Motor Secuencial
+# ✅ RESOLUCIÓN SOBERANA: Se elimina el duplicado v203 para sanar el linker.
 [[test]]
-name = "sequential_engine_v203"
+name = "sequential_sync_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/sequential_engine_test.rs"
 
-# ✅ NIVELACIÓN SOBERANA V250: Único target para el despacho polimórfico
+# 10. Despacho polimórfico V250
 [[test]]
 name = "executor_dispatch_v250"
 path = "../../../tests/mirror/libs/domain/mining_strategy/executor_dispatch.test.rs"
 
-# --- NUEVAS PRUEBAS DE ESTRATO V0.3.2 ---
+# 11. Lógica combinatoria U256
+[[test]]
+name = "combinatoric_logic_test"
+path = "../../../tests/mirror/libs/domain/mining_strategy/combinatoric_logic.test.rs"
 
-# ✅ NIVELACIÓN SOBERANA: Certificación de Resolución ECDLP (Canguro)
+# 12. Resolución ECDLP (Canguro de Pollard)
 [[test]]
 name = "kangaroo_lambda_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/kangaroo_lambda.test.rs"
 
-# ✅ NIVELACIÓN SOBERANA: Validación de Auditoría de Diccionarios (Brainwallets)
+# 13. Auditoría de Diccionarios (Brainwallets)
 [[test]]
 name = "dictionary_engine_test"
 path = "../../../tests/mirror/libs/domain/mining_strategy/engines/dictionary_engine.test.rs"

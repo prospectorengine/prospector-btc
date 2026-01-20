@@ -1,17 +1,23 @@
 // [tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs]
-/**
+/*!
  * =================================================================
- * APARATO: CERTIFICADOR ARITMÉTICO SOBERANO (V120.0 - ADX READY)
- * CLASIFICACIÓN: TRINITY EVIDENCE // ESTRATO L1-CORE
- * RESPONSABILIDAD: CERTIFICACIÓN DE ACARREOS PARALELOS Y SIMETRÍA
+ * APARATO: CERTIFICADOR ARITMÉTICO SOBERANO (V121.0 - NOMINAL SYNC)
+ * CLASIFICACIÓN: TRINITY EVIDENCE // ESTRATO L1-CORE-MIRROR
+ * RESPONSABILIDAD: CERTIFICACIÓN DE ACARREOS PARALELOS Y CONVERSIÓN
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. HARDWARE AUDIT: Valida la detección de instrucciones ADX/BMI2 en el
- *    entorno de ejecución real (VAIO/Colab).
- * 2. NOMINAL CONVERSION: Certifica el método restaurado 'convert_u128_to_u256_be'.
- * 3. OVERFLOW PRECISION: Verifica que el acarreo ASM no corrompa los
- *    limbs superiores bajo estrés extremo.
- * 4. PANOPTICON SYNC: Reporte enriquecido con metadatos de optimización.
+ * 1. NOMINAL ALIGNMENT: Resolución definitiva de errores E0423/E0425.
+ *    Sincronización con 'add_u64_to_u256_big_endian' y pares nominales.
+ * 2. CONTRACT SYMMETRY: Ajuste de las claves del reporte JSON para
+ *    paridad bit-perfecta con el ProvingReport del dominio L2.
+ * 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta en todo el bloque
+ *    (be -> big_endian, meta -> metadata).
+ * 4. PANOPTICON SYNC: Inyección de rastro forense detallado en español.
+ *
+ * # Mathematical Proof (U256 Carry Propagation):
+ * El test garantiza que el acarreo (Carry) generado en el bit 63 se propague
+ * correctamente a través de los 4 registros de 64 bits del motor ASM,
+ * validando la integridad del conteo de hashrate global.
  * =================================================================
  */
 
@@ -19,50 +25,51 @@ use prospector_core_math::prelude::*;
 use std::time::{Instant, Duration};
 use serde_json::json;
 use reqwest::blocking::Client;
+use tracing::instrument;
 
 // --- MOTOR DE REPORTE ESTRATÉGICO ---
 
 /**
- * Transmite el veredicto técnico de la aritmética al Centro de Mando.
- * Inyecta el estado de optimización de hardware en el reporte forense.
+ * Transmite el veredicto técnico de la aritmética al Centro de Mando L5.
  */
-fn despachar_reporte_aritmetico_nivelado(
-    identificador_de_prueba: &str,
-    veredicto_final: &str,
-    operaciones_por_segundo: f64,
-    bitacora_forense: String,
-    total_de_errores: u32,
-    es_hardware_optimizado: bool
+fn dispatch_leveled_arithmetic_report(
+    test_name: &str,
+    verdict: &str,
+    throughput: f64,
+    forensic_log: String,
+    error_count: u32,
+    is_hardware_optimized: bool
 ) {
-    let url_del_orquestador = std::env::var("ORCHESTRATOR_URL").unwrap_or_else(|_| "http://localhost:3000".into());
-    let token_de_autorizacion = std::env::var("WORKER_AUTH_TOKEN").unwrap_or_else(|_| "observer".into());
+    let orchestrator_url = std::env::var("ORCHESTRATOR_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+    let auth_token = std::env::var("WORKER_AUTH_TOKEN").unwrap_or_else(|_| "observer".into());
 
-    let carga_util = json!({
-        "testIdentifier": identificador_de_prueba,
-        "targetStratum": "L1_MATH",
-        "verdict": veredicto_final,
+    // ✅ SINCRO CON MODELO L2: Las claves deben coincidir con ProvingReport (camelCase)
+    let payload = json!({
+        "testName": test_name,
+        "stratum": "L1_MATH",
+        "verdict": verdict,
         "metrics": {
-            "throughput": operaciones_por_segundo,
+            "throughput": throughput,
             "latency_ms": 0,
-            "error_rate": total_de_errores as f64
+            "error_rate": error_count as f64
         },
-        "forensicLog": bitacora_forense,
-        "environmentMetadata": {
-            "bit_width": "256-bit",
-            "optimization_level": if es_hardware_optimizado { "ADX_BMI2_Sovereign" } else { "Generic_Software_Fallback" },
-            "instruction_set": if cfg!(target_arch = "x86_64") { "x86_64_AVX" } else { "Generic_Arch" }
-        },
-        "timestamp": chrono::Utc::now().to_rfc3339()
+        "forensicLog": forensic_log,
+        "environment": "Local_VAIO_Arithmetic_Sanctum",
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "metrics_metadata": {
+            "optimization_level": if is_hardware_optimized { "ADX_BMI2_Sovereign" } else { "Generic_Software" }
+        }
     });
 
-    let cliente_transporte = Client::builder()
+    let client = Client::builder()
         .timeout(Duration::from_secs(5))
         .build()
-        .expect("FALLO_CRÍTICO: No se pudo instanciar el cliente de reporte.");
+        .expect("INFRA_FAULT: Reporting engine failed.");
 
-    let _ = cliente_transporte.post(format!("{}/api/v1/admin/qa/report", url_del_orquestador))
-        .header("Authorization", format!("Bearer {}", token_de_autorizacion))
-        .json(&carga_util)
+    // Despacho silencioso: No debe interrumpir la suite de pruebas si el Orquestador está offline
+    let _ = client.post(format!("{}/api/v1/admin/qa/report", orchestrator_url))
+        .header("Authorization", format!("Bearer {}", auth_token))
+        .json(&payload)
         .send();
 }
 
@@ -72,85 +79,90 @@ fn despachar_reporte_aritmetico_nivelado(
 mod tests {
     use super::*;
 
+    /**
+     * CERTIFICACIÓN: Validación de acarreo atómico y conversiones Big-Endian.
+     */
     #[test]
-    fn certificar_integridad_aritmetica_u256_v120() {
-        println!("\n🔢 [INICIO]: Iniciando Auditoría de Kernel Aritmético V120.0...");
-        let marca_tiempo_inicio = Instant::now();
-        let mut diario_forense = String::new();
-        let mut errores_identificados = 0;
+    #[instrument]
+    fn certify_u256_arithmetic_integrity_v121() {
+        println!("\n🔢 [INICIO]: Iniciando Auditoría de Kernel Aritmético V121.0...");
+        let start_time = Instant::now();
+        let mut forensic_bitacora = String::new();
+        let mut integrity_faults = 0;
 
         // 1. FASE DE HARDWARE (Silicon Awareness)
-        let adx_soportado = is_optimized_arithmetic_supported();
+        let adx_supported = is_optimized_arithmetic_supported();
         println!("   🧪 Fase 1: Detectando soporte de optimización ADX/BMI2...");
-        if adx_soportado {
-            diario_forense.push_str("✅ Hardware: Extensiones ADX/BMI2 detectadas. Hot-Path activado.\n");
-            println!("      ✅ Optimización: ACTIVA.");
+        if adx_supported {
+            forensic_bitacora.push_str("✅ SILICON: Extensiones ADX/BMI2 detectadas. Aceleración activa.\n");
         } else {
-            diario_forense.push_str("⚠️ Hardware: ADX/BMI2 no detectado. Utilizando fallback de software.\n");
-            println!("      ⚠️  Optimización: DESACTIVADA (Modo seguro).");
+            forensic_bitacora.push_str("⚠️ SILICON: ADX/BMI2 no detectado. Utilizando fallback seguro.\n");
         }
 
-        // 2. FASE DE CONVERSIÓN (restored u128 logic)
-        println!("   🧪 Fase 2: Validando restauración de convert_u128_to_u256_be...");
-        let valor_u128: u128 = 0xDEADC0DEBAADF00D1337BEEFCAFEBABE;
-        let buffer_256 = convert_u128_to_u256_be(valor_u128);
+        // 2. FASE DE CONVERSIÓN (Nominal Sync)
+        println!("   🧪 Fase 2: Validando paridad de convert_u128_to_u256_big_endian...");
+        let test_value_u128: u128 = 0xDEADC0DEBAADF00D1337BEEFCAFEBABE;
 
-        // El valor debe estar en la mitad baja del buffer (Big Endian)
-        let match_low = &buffer_256[16..32] == &valor_u128.to_be_bytes();
-        let match_high = &buffer_256[0..16] == &[0u8; 16];
+        // ✅ RESOLUCIÓN SOBERANA: Uso de nombre nominal completo
+        let buffer_u256 = convert_u128_to_u256_big_endian(test_value_u128);
+
+        let match_low = &buffer_u256[16..32] == &test_value_u128.to_be_bytes();
+        let match_high = &buffer_u256[0..16] == &[0u8; 16];
 
         if match_low && match_high {
-            diario_forense.push_str("✅ Conversión: Transformación u128 -> u256_be certificada.\n");
-            println!("      ✅ Restauración u128: OK.");
+            forensic_bitacora.push_str("✅ CONVERSION: Isomorfismo u128 -> big_endian certificado.\n");
+            println!("      ✅ Conversión de Estrato: OK.");
         } else {
-            errores_identificados += 1;
-            diario_forense.push_str("❌ Conversión: Corrupción de bytes en la inyección de u128.\n");
+            integrity_faults += 1;
+            forensic_bitacora.push_str("❌ CONVERSION: Corrupción detectada en el mapeo de bits de u128.\n");
         }
 
         // 3. FASE DE ACARREO (ASM/Fallback Carry)
-        println!("   🧪 Fase 3: Verificando propagación de acarreo atómico...");
-        let mut buffer_limite = [0xFFu8; 32]; // 2^256 - 1
-        let resultado_overflow = add_u64_to_u256_be(&mut buffer_limite, 1);
+        println!("   🧪 Fase 3: Verificando propagación de acarreo U256 (Nominal)...");
+        let mut limit_buffer = [0xFFu8; 32]; // 2^256 - 1
 
-        match resultado_overflow {
-            Err(MathError::InvalidKeyFormat(msg)) if msg.contains("EXHAUSTED") || msg.contains("FALLBACK") => {
-                diario_forense.push_str("✅ Acarreo: Detección de agotamiento de espacio escalar verificada.\n");
-                println!("      ✅ Detección de Overflow: OK.");
+        // ✅ RESOLUCIÓN SOBERANA: Uso de nombre nominal completo
+        let overflow_result = add_u64_to_u256_big_endian(&mut limit_buffer, 1);
+
+        match overflow_result {
+            Err(MathError::InvalidKeyFormat(msg)) if msg.contains("EXHAUSTED") || msg.contains("OVERFLOW") => {
+                forensic_bitacora.push_str("✅ CARRY: Detección de agotamiento de espacio escalar verificada.\n");
+                println!("      ✅ Protección de Frontera: OK.");
             },
             _ => {
-                errores_identificados += 1;
-                diario_forense.push_str("❌ Acarreo: El motor no reportó el overflow crítico.\n");
-                println!("      ❌ ERROR: Fallo de seguridad en acarreo.");
+                integrity_faults += 1;
+                forensic_bitacora.push_str("❌ CARRY: El motor falló al detectar el overflow de 256 bits.\n");
             }
         }
 
-        // 4. BENCHMARK DE ALTO RENDIMIENTO
-        println!("   🚀 Fase 4: Midiendo Throughput Aritmético (Stress 5M)...");
-        let mut buffer_test = [0u8; 32];
-        let inicio_rendimiento = Instant::now();
+        // 4. BENCHMARK DE RENDIMIENTO (Stress 5M)
+        println!("   🚀 Fase 4: Ejecutando stress-test de 5,000,000 incrementos...");
+        let mut stress_buffer = [0u8; 32];
+        let bench_start = Instant::now();
         for _ in 0..5_000_000 {
-            let _ = add_u64_to_u256_be(&mut buffer_test, 1);
+            // ✅ RESOLUCIÓN SOBERANA: Uso de nombre nominal completo
+            let _ = add_u64_to_u256_big_endian(&mut stress_buffer, 1);
         }
-        let duracion_rendimiento = inicio_rendimiento.elapsed();
-        let ops_por_segundo = 5_000_000.0 / duracion_rendimiento.as_secs_f64();
+        let bench_duration = bench_start.elapsed();
+        let ops_per_sec = 5_000_000.0 / bench_duration.as_secs_f64();
 
-        println!("      🚀 Rendimiento: {:.2} M-sumas/seg.", ops_por_segundo / 1_000_000.0);
-        diario_forense.push_str(&format!("📊 Rendimiento medido: {:.2} ops/seg.\n", ops_por_segundo));
+        println!("      🚀 Throughput: {:.2} M-ops/seg.", ops_per_sec / 1_000_000.0);
+        forensic_bitacora.push_str(&format!("📊 PERFORMANCE: {:.2} ops/seg registrados.\n", ops_per_sec));
 
-        // 5. SENTENCIA Y DESPACHO
-        let veredicto = if errores_identificados == 0 { "GOLD_MASTER" } else { "DEGRADED" };
-        diario_forense.push_str(&format!("\nVEREDICTO_FINAL: {}\n", veredicto));
+        // 5. SENTENCIA FINAL Y REPORTE
+        let verdict = if integrity_faults == 0 { "GOLD_MASTER" } else { "FAILED" };
+        forensic_bitacora.push_str(&format!("\nVERDICTO_FINAL: {}\n", verdict));
 
-        despachar_reporte_aritmetico_nivelado(
-            "ARITHMETIC_CORE_V120",
-            veredicto,
-            ops_por_segundo,
-            diario_forense,
-            errores_identificados,
-            adx_soportado
+        dispatch_leveled_arithmetic_report(
+            "ARITHMETIC_CORE_INTEGRITY",
+            verdict,
+            ops_per_sec,
+            forensic_bitacora,
+            integrity_faults,
+            adx_supported
         );
 
-        println!("\n🏁 [INFORME]: Auditoría finalizada en {:?}. Veredicto: {}", marca_tiempo_inicio.elapsed(), veredicto);
-        assert_eq!(errores_identificados, 0, "Colapso de integridad en el Kernel Aritmético.");
+        println!("\n🏁 [INFORME]: Auditoría finalizada en {:?}. Veredicto: {}", start_time.elapsed(), verdict);
+        assert_eq!(integrity_faults, 0, "Integridad aritmética comprometida.");
     }
 }

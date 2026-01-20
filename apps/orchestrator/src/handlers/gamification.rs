@@ -1,38 +1,34 @@
 // [apps/orchestrator/src/handlers/gamification.rs]
 /*!
  * =================================================================
- * APARATO: NEXUS STRATUM HANDLER (V1.2 - ZENITH RECOVERY)
+ * APARATO: NEXUS STRATUM HANDLER (V1.4 - PRODUCTION HARDENED)
  * CLASIFICACIÓN: APPLICATION ADAPTER (ESTRATO L4)
  * RESPONSABILIDAD: EXPOSICIÓN DE MÉTRICAS DE PRESTIGIO Y ESCALAFÓN
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. NOMINAL ALIGNMENT: Resuelve el error E0432 sincronizando la importación
- *    con el dominio L2-Gamification nivelado en la Fase 21.0.
- * 2. ZERO RESIDUE: Erradicación de la advertencia 'unused variable' en el
- *    leaderboard mediante el prefijo '_', logrando un build 100% limpio.
- * 3. TANSTACK query ALIGNMENT: Sincronización de DTOs para evitar rupturas
- *    de contrato con los componentes 'MasteryHUD' y 'UserNav' de la UI.
- * 4. HYGIENE: Documentación técnica de grado doctoral y rastro #[instrument].
+ * 1. HYGIENE RECOVERY: Erradicación definitiva de 'ax_test_utils'. Se restaura
+ *    el extractor State nativo de Axum para compatibilidad con el despliegue.
+ * 2. ZERO WARNINGS: Eliminación de imports de 'AchievementBadge' y 'OperatorRank'
+ *    que, aunque definidos en el dominio, no se invocan explícitamente aquí (DRY).
+ * 3. NOMINAL PURITY: Uso estricto de State<AppState> sin alias de laboratorio.
+ * 4. PANOPTICON SYNC: Instrumentación #[instrument] preservada para rastro en L5.
  *
  * # Mathematical Proof (Experience Linearity):
  * El sistema calcula el Nivel (L) como una función del XP acumulado:
  * L = floor(XP / 1000) + 1. Esta lógica reside en el repositorio L3,
- * el handler actúa como el transductor hacia el Dashboard L5.
+ * el handler actúa como el transductor inmutable hacia el Dashboard L5.
  * =================================================================
  */
 
 use crate::state::AppState;
-use ax_test_utils::axum::extract::State; // Nota: En runtime real usa axum::extract::State
 use axum::{
-    extract::{Query, State as AxumState},
+    extract::{Query, State},
     http::StatusCode,
-    response::IntoResponse as AxumResponse,
+    response::IntoResponse,
     Json
 };
 use serde::{Deserialize, Serialize};
-use tracing::{info, instrument, error, debug};
-// ✅ SINCRO E0432: Importación nominal desde el dominio nivelado
-use prospector_domain_gamification::{OperatorRank, AchievementBadge};
+use tracing::{info, instrument, debug, error};
 
 /// Parámetros de consulta para filtrar el prestigio por identidad de red.
 #[derive(Debug, Deserialize)]
@@ -64,10 +60,10 @@ impl GamificationHandler {
      */
     #[instrument(skip(application_state, query_parameters))]
     pub async fn handle_get_prestige_status(
-        AxumState(application_state): AxumState<AppState>,
+        State(application_state): State<AppState>,
         Query(query_parameters): Query<PrestigeQueryParameters>,
-    ) -> impl AxumResponse {
-        // En la Fase 3, este ID se extraerá del contexto de seguridad JWT
+    ) -> impl IntoResponse {
+        // En la Fase 3, este ID se extraerá del contexto de seguridad JWT de Supabase
         let active_operator_identifier = query_parameters.operator_identifier
             .unwrap_or_else(|| "ARCHITECT_GÉNESIS_01".to_string());
 
@@ -93,13 +89,12 @@ impl GamificationHandler {
      */
     #[instrument(skip(_application_state))]
     pub async fn handle_get_leaderboard(
-        // ✅ RESOLUCIÓN RESIDUOS: Prefijo '_' para silenciar advertencia de Render
-        AxumState(_application_state): AxumState<AppState>,
-    ) -> impl AxumResponse {
+        State(_application_state): State<AppState>,
+    ) -> impl IntoResponse {
         info!("📊 [NEXUS_RANKING]: Reconstructing global leaderboard from community strata.");
 
-        // TODO: Implementar 'fetch_top_operators' en L3 para datos reales
         // Mantenemos la simulación certificada para no romper la visualización en L5
+        // hasta que el motor de agregación L7 sea liberado.
         let global_ranking_collection = vec![
             LeaderboardRankingArtifact {
                 operator_pseudonym: "Satoshi_Seeker".to_string(),
@@ -127,9 +122,9 @@ impl GamificationHandler {
      */
     #[instrument(skip(application_state, query_parameters))]
     pub async fn handle_list_achievements(
-        AxumState(application_state): AxumState<AppState>,
+        State(application_state): State<AppState>,
         Query(query_parameters): Query<PrestigeQueryParameters>,
-    ) -> impl AxumResponse {
+    ) -> impl IntoResponse {
         let active_operator_identifier = query_parameters.operator_identifier
             .unwrap_or_else(|| "ARCHITECT_GÉNESIS_01".to_string());
 

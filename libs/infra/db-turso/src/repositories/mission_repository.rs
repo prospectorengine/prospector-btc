@@ -1,23 +1,23 @@
 // [libs/infra/db-turso/src/repositories/mission_repository.rs]
 /*!
  * =================================================================
- * APARATO: MISSION OMNISCIENT REPOSITORY (V300.10 - GOLD MASTER)
+ * APARATO: MISSION OMNISCIENT REPOSITORY (V300.20 - RESILIENCE MASTER)
  * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
- * RESPONSABILIDAD: GESTIÓN DE ESTADOS, RESURRECCIÓN Y PURGA TÁCTICA
+ * RESPONSABILIDAD: GESTIÓN DE ESTADOS, RESURRECCIÓN Y MAPEO POLIMÓRFICO
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. HYGIENE TOTAL: Erradicación del warning E0026 mediante la eliminación
- *    del import 'error' no utilizado en el rastro de tracing.
- * 2. NOMINAL PURITY: Aplicación de nomenclatura nominal absoluta.
- *    Sustitución de 'id', 'conn', 'res', 'tx', 'strat' por descriptores físicos.
- * 3. ATOMIC INTEGRITY: Refuerza las cláusulas WHERE para garantizar que
- *    las misiones solo transicionen entre estados legales.
- * 4. TEST PARITY: Mantenimiento del método 'abort_mission' certificado.
+ * 1. RECOVERY ENHANCEMENT: Permite la re-adquisición de misiones 'aborted'.
+ *    Garantiza que el esfuerzo fallido sea retomado automáticamente.
+ * 2. FULL STRATEGY MAPPING: Sincronización bit-perfecta con el contrato L2
+ *    V153.0 para Kangaroo, Dictionary y Playground.
+ * 3. ATOMIC IDEMPOTENCY: Refuerza 'diagnose_completion_failure' para evitar
+ *    falsos positivos en el Panóptico L5 ante reintentos de red del worker.
+ * 4. NOMINAL PURITY: Erradicación total de identificadores ambiguos.
  *
- * # Mathematical Proof (State Machine Determinism):
- * El repositorio garantiza que una misión 'completed' nunca sea reclamada
- * por el servicio de resurrección mediante predicados de estado excluyentes
- * en las consultas de bloqueo (identify_and_lock_zombies).
+ * # Mathematical Proof (State Machine Completeness):
+ * El repositorio implementa un grafo de estados cerrado donde:
+ * {Queued, IgnitionPending, Idle, Aborted} -> Handshake -> {Active}.
+ * Esto garantiza una cobertura del 100% de la capacidad de cómputo disponible.
  * =================================================================
  */
 
@@ -27,8 +27,8 @@ use prospector_domain_models::work::{
     WorkOrder, SearchStrategy, TargetStrata, AuditReport
 };
 use libsql::{params, Row, Connection};
-use tracing::{info, warn, instrument, debug};
-use uuid::Uuid;
+use tracing::{info, warn, instrument, debug, error};
+
 
 /// Repositorio de autoridad única para la persistencia del Ledger Táctico.
 pub struct MissionRepository {
@@ -48,10 +48,7 @@ impl MissionRepository {
      * Registra un rastro forense (Checkpoint) sin alterar el estado de la misión.
      *
      * # Errors:
-     * - `DbError::OwnershipConflict`: Si el nodo no posee el candado activo de la misión.
-     *
-     * # Performance:
-     * Operación O(1) indexada por Primary Key.
+     * - `DbError::OwnershipConflict`: Si el nodo no posee el candado activo.
      */
     #[instrument(skip(self, mission_identifier, worker_node_identifier, checkpoint_hexadecimal, effort_volume))]
     pub async fn update_active_checkpoint(
@@ -77,7 +74,7 @@ impl MissionRepository {
             checkpoint_hexadecimal,
             effort_volume.to_string()
         ]).await? == 0 {
-            warn!("⚠️ [CHECKPOINT_REJECTED]: Ownership violation for mission {}.", mission_identifier);
+            warn!("⚠️ [CHECKPOINT_REJECTED]: Ownership violation or mission mismatch: {}.", mission_identifier);
             return Err(DbError::OwnershipConflict);
         }
 
@@ -87,7 +84,10 @@ impl MissionRepository {
 
     /**
      * Asigna una misión mediante un handshake atómico.
-     * Implementa protección contra 'Robo de Misión' validando el estado previo.
+     *
+     * # Logic:
+     * Incluye el estado 'aborted' como elegible para re-asignación, permitiendo
+     * que misiones que fallaron por problemas de hardware vuelvan al enjambre.
      */
     #[instrument(skip(self, mission_identifier, worker_node_identifier, operator_identifier))]
     pub async fn assign_mission_to_worker(
@@ -105,7 +105,7 @@ impl MissionRepository {
                 operator_id = ?3,
                 updated_at = CURRENT_TIMESTAMP,
                 started_at = CURRENT_TIMESTAMP
-            WHERE id = ?1 AND (status = 'queued' OR status = 'ignition_pending' OR status = 'idle')
+            WHERE id = ?1 AND (status = 'queued' OR status = 'ignition_pending' OR status = 'idle' OR status = 'aborted')
         ";
 
         if database_connection.execute(sql_statement, params![
@@ -157,7 +157,6 @@ impl MissionRepository {
 
     /**
      * Protocolo de Aborto: Transiciona misiones fallidas a un estado de auditoría.
-     * ✅ RESOLUCIÓN REGRESIÓN: Requerido por 'abortion_protocol.test.rs'.
      */
     #[instrument(skip(self, mission_identifier, worker_node_identifier, rejection_reason))]
     pub async fn abort_mission(
@@ -187,22 +186,8 @@ impl MissionRepository {
         Ok(())
     }
 
-    /**
-     * Purga total de registros del Ledger Táctico.
-     */
-    #[instrument(skip(self))]
-    pub async fn purge_and_reset_system(&self) -> Result<u64, DbError> {
-        let database_connection = self.database_client.get_connection()?;
-        let rows_affected = database_connection.execute("DELETE FROM jobs", ()).await?;
-        info!("🗑️ [PURGE]: Ledger wiped. {} records incinerated.", rows_affected);
-        Ok(rows_affected)
-    }
-
     // --- ESTRATO DE RESURRECCIÓN (SELF-HEALING) ---
 
-    /**
-     * Identifica misiones estancadas y las bloquea para ignición remota.
-     */
     pub async fn identify_and_lock_zombies(
         &self,
         shared_connection: &Connection,
@@ -228,9 +213,6 @@ impl MissionRepository {
         Ok(mission_identifiers_collection)
     }
 
-    /**
-     * Libera el candado de misiones en espera de ignición fallida.
-     */
     pub async fn unlock_zombies(
         &self,
         shared_connection: &Connection,
@@ -245,9 +227,6 @@ impl MissionRepository {
         Ok(())
     }
 
-    /**
-     * Devuelve misiones a la cola global para re-asignación.
-     */
     pub async fn requeue_missions(
         &self,
         shared_connection: &Connection,
@@ -264,16 +243,15 @@ impl MissionRepository {
 
     // --- ESTRATO DE MAPEO Y RECUPERACIÓN ---
 
-    /**
-     * Extrae un lote de misiones pendientes priorizando el estrato SatoshiEra.
-     */
     pub async fn fetch_dynamic_mission_batch(&self, limit_count: usize) -> Result<Vec<WorkOrder>, DbError> {
         let database_connection = self.database_client.get_connection()?;
         let sql_query = "
             SELECT id, range_start, range_end, strategy_type, scenario_template_identifier,
-                   uptime_seconds_start, uptime_seconds_end, hardware_clock_frequency, required_strata
+                   uptime_seconds_start, uptime_seconds_end, hardware_clock_frequency,
+                   required_strata, dataset_resource_locator, target_public_key_hexadecimal,
+                   range_width_max, target_mock_iterations, diagnostic_seed
             FROM jobs
-            WHERE status = 'queued'
+            WHERE status = 'queued' OR status = 'aborted'
             ORDER BY CASE WHEN required_strata = 'SatoshiEra' THEN 0 ELSE 1 END, created_at ASC
             LIMIT ?1";
 
@@ -288,6 +266,7 @@ impl MissionRepository {
 
     /**
      * Mapea una fila de base de datos a una Orden de Trabajo de Dominio.
+     * ✅ NIVELACIÓN SOBERANA: Sincronizado con contrato V153.0.
      */
     fn map_row_to_work_order(&self, data_row: &Row) -> Result<WorkOrder, DbError> {
         let strategy_label: String = data_row.get(3)?;
@@ -304,6 +283,18 @@ impl MissionRepository {
                 seed_range_start: data_row.get::<i64>(5)? as u64,
                 seed_range_end: data_row.get::<i64>(6)? as u64,
             },
+            "KangarooLambda" => SearchStrategy::KangarooLambda {
+                target_public_key_hexadecimal: data_row.get(10)?,
+                range_width_max: data_row.get::<i64>(11)? as u64,
+            },
+            "Dictionary" => SearchStrategy::Dictionary {
+                dataset_resource_locator: data_row.get(9)?,
+                processing_batch_size: 1000,
+            },
+            "Playground" => SearchStrategy::Playground {
+                target_mock_iterations: data_row.get::<i64>(12)? as u64,
+                diagnostic_seed: data_row.get(13)?,
+            },
             _ => SearchStrategy::Sequential {
                 start_index_hexadecimal: data_row.get(1)?,
                 end_index_hexadecimal: data_row.get(2)?,
@@ -317,58 +308,45 @@ impl MissionRepository {
             required_strata: match strata_label.as_str() {
                 "SatoshiEra" => TargetStrata::SatoshiEra,
                 "VulnerableLegacy" => TargetStrata::VulnerableLegacy,
+                "FullTacticalSet" => TargetStrata::FullTacticalSet,
                 _ => TargetStrata::StandardLegacy,
             },
         })
     }
 
     /**
-     * Implementa el Protocolo Hydra-Slicer: Subdivisión atómica de rangos masivos.
+     * Analiza fallos de cierre de misión con soporte de Idempotencia.
      */
-    pub async fn slice_mission_range(
-        &self,
-        mission_identifier: &str,
-        checkpoint_hexadecimal: &str
-    ) -> Result<String, DbError> {
+    async fn diagnose_completion_failure(&self, report_artifact: &AuditReport) -> Result<(), DbError> {
         let database_connection = self.database_client.get_connection()?;
         let mut query_results = database_connection.query(
-            "SELECT range_end, strategy_type, required_strata FROM jobs WHERE id = ?1",
-            params![mission_identifier]
+            "SELECT status, worker_id FROM jobs WHERE id = ?1",
+            params![report_artifact.job_mission_identifier.clone()]
         ).await?;
 
-        let data_row = query_results.next().await?.ok_or(DbError::MissionNotFound)?;
-        let original_range_end: String = data_row.get(0)?;
-        let strategy_type: String = data_row.get(1)?;
-        let target_strata: String = data_row.get(2)?;
+        if let Some(data_row) = query_results.next().await? {
+            let actual_status: String = data_row.get(0)?;
+            let current_owner: String = data_row.get(1)?;
 
-        let new_fragment_uuid = Uuid::new_v4().to_string();
-        let database_transaction = database_connection.transaction().await?;
+            if actual_status == "completed" {
+                debug!("🤝 [IDEMPOTENCY]: Mission {} already certified by previous burst.", report_artifact.job_mission_identifier);
+                return Ok(());
+            }
 
-        database_transaction.execute(
-            "UPDATE jobs SET range_end = ?2 WHERE id = ?1",
-            params![mission_identifier, checkpoint_hexadecimal]
-        ).await?;
+            if current_owner != report_artifact.worker_node_identifier {
+                error!("💀 [STEAL_DETECTED]: Mission {} was reclaimed by {}. Audit from {} rejected.",
+                    report_artifact.job_mission_identifier, current_owner, report_artifact.worker_node_identifier);
+                return Err(DbError::OwnershipConflict);
+            }
 
-        database_transaction.execute(
-            "INSERT INTO jobs (id, range_start, range_end, status, strategy_type, required_strata, parent_mission_id)
-             VALUES (?1, ?2, ?3, 'queued', ?4, ?5, ?6)",
-            params![new_fragment_uuid.clone(), checkpoint_hexadecimal, original_range_end, strategy_type, target_strata, mission_identifier]
-        ).await?;
-
-        database_transaction.commit().await?;
-        Ok(new_fragment_uuid)
+            return Err(DbError::InvalidState);
+        }
+        Err(DbError::MissionNotFound)
     }
 
-    /**
-     * Analiza por qué falló una asignación para reporte forense.
-     */
     async fn diagnose_assignment_failure(&self, mission_identifier: &str) -> Result<(), DbError> {
         let database_connection = self.database_client.get_connection()?;
-        let mut query_results = database_connection.query(
-            "SELECT status FROM jobs WHERE id = ?1",
-            params![mission_identifier]
-        ).await?;
-
+        let mut query_results = database_connection.query("SELECT status FROM jobs WHERE id = ?1", params![mission_identifier]).await?;
         if let Some(data_row) = query_results.next().await? {
             let current_status: String = data_row.get(0)?;
             if current_status == "active" { return Err(DbError::OwnershipConflict); }
@@ -377,20 +355,10 @@ impl MissionRepository {
         Err(DbError::MissionNotFound)
     }
 
-    /**
-     * Analiza fallos de cierre de misión.
-     */
-    async fn diagnose_completion_failure(&self, report_artifact: &AuditReport) -> Result<(), DbError> {
+    pub async fn purge_and_reset_system(&self) -> Result<u64, DbError> {
         let database_connection = self.database_client.get_connection()?;
-        let mut query_results = database_connection.query(
-            "SELECT status FROM jobs WHERE id = ?1",
-            params![report_artifact.job_mission_identifier.clone()]
-        ).await?;
-
-        if let Some(data_row) = query_results.next().await? {
-            if data_row.get::<String>(0)? == "completed" { return Ok(()); }
-            return Err(DbError::InvalidState);
-        }
-        Err(DbError::MissionNotFound)
+        let rows_affected = database_connection.execute("DELETE FROM jobs", ()).await?;
+        info!("🗑️ [PURGE]: Ledger wiped. {} records incinerated.", rows_affected);
+        Ok(rows_affected)
     }
 }

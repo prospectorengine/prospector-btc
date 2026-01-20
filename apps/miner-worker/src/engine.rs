@@ -1,22 +1,22 @@
 // [apps/miner-worker/src/engine.rs]
 /*!
  * =================================================================
- * APARATO: ADAPTIVE EXECUTION ENGINE (V132.0 - SILICON SYNERGY)
+ * APARATO: ADAPTIVE EXECUTION ENGINE (V133.0 - ZENITH GOLD)
  * CLASIFICACIÓN: WORKER EXECUTION LAYER (ESTRATO L1-WORKER)
- * RESPONSABILIDAD: ORQUESTACIÓN DE MISIÓN Y VIGILANCIA BIOMÉTRICA
+ * RESPONSABILIDAD: ORQUESTACIÓN DE MISIONES Y RESILIENCIA DE RED
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. STRATA SYNERGY: Cierra el circuito con el StrategyExecutor V261.0
- *    inyectando el material de ADN para misiones Satoshi-XP.
- * 2. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta (tx -> transmission_sender).
- * 3. CORE PINNING LOGIC: Optimiza la afinidad de hilos para maximizar el
- *    rendimiento del Hot-Loop de Meloni 5M.
- * 4. PHOENIX READINESS: Estructura preparada para el refresco de identidades ZK.
+ * 1. CONTRACT ALIGNMENT: Resuelve el error de campo 'ram_available_mb'
+ *    sincronizando con 'ram_available_megabytes' del modelo L2 SSoT.
+ * 2. NOMINAL PURITY: Erradicación total de abreviaciones en acumuladores
+ *    y estructuras de despacho.
+ * 3. ZENITH OBSERVABILITY: Instrumentación #[instrument] enriquecida para
+ *    trazado forense en el Dashboard L5.
+ * 4. HYGIENE: Cero residuos de compilación y cumplimiento de RustDoc MIT.
  *
- * # Mathematical Proof (Hardware Pinning):
- * Al anclar los hilos de computación a núcleos físicos, se minimizan los
- * "Cache Misses" L1/L2, permitiendo que las ráfagas de Montgomery de 1024
- * puntos se procesen dentro de la ventana de latencia de la SRAM.
+ * # Mathematical Proof (Deterministic Lifecycle):
+ * Garantiza que t(misión) = t(negociación) + t(hidratación) + t(cómputo),
+ * minimizando los huecos de inactividad mediante la carga paralela de shards.
  * =================================================================
  */
 
@@ -27,26 +27,26 @@ use tokio::sync::mpsc;
 use tokio::time::sleep;
 use tracing::{info, warn, error, instrument, debug};
 
-// --- SINAPSIS CON EL NÚCLEO Y DOMINIO ---
+// --- SINAPSIS CON EL NÚCLEO Y DOMINIO (L1-L3) ---
 use prospector_core_probabilistic::sharded::ShardedFilter;
 use prospector_domain_models::work::{
-    WorkOrder, MissionRequestPayload, NodeHardwareCapacity, TargetStrata, SearchStrategy
+    WorkOrder, MissionRequestPayload, NodeHardwareCapacity, TargetStrata
 };
 use prospector_domain_models::finding::Finding;
 use prospector_domain_strategy::executor::{StrategyExecutor, FindingHandler};
-use prospector_infra_worker_client::{WorkerClient, hydrator::ForensicDnaHydrator};
+use prospector_infra_worker_client::WorkerClient;
 use crate::cpu_manager::HardwareMonitor;
 
-/// Umbral térmico crítico para evitar el Thermal Throttling del host.
-const THERMAL_CRITICAL_THRESHOLD_CELSIUS: f32 = 82.0;
-/// Intervalo de sincronización del rastro de auditoría con el Orquestador.
-const TACTICAL_CHECKPOINT_INTERVAL_SECONDS: u64 = 60;
-/// Conteo determinista de fragmentos del censo (Sovereign Standard).
-const SHARD_PARTITION_COUNT: usize = 4;
+/// Umbral térmico de seguridad para evitar baneo por inestabilidad de instancia.
+const THERMAL_THROTTLE_THRESHOLD_CELSIUS: f32 = 82.5;
+/// Intervalo de sincronización del rastro forense (Checkpoints) hacia el Hub.
+const CHECKPOINT_HEARTBEAT_INTERVAL_SECONDS: u64 = 45;
+/// Conteo determinista de fragmentos de censo (SipHash-1-3 Strata).
+const FILTRATION_PARTITION_COUNT: usize = 4;
 
 /**
  * IMPLEMENTACIÓN: REPORTERO DE COLISIONES SOBERANO
- * Actúa como el sumidero de señales para cualquier hallazgo criptográfico.
+ * Canaliza los hallazgos criptográficos hacia el túnel asíncrono de red.
  */
 struct SwarmFindingReporter {
     transmission_channel_sender: mpsc::UnboundedSender<Finding>,
@@ -55,16 +55,13 @@ struct SwarmFindingReporter {
 }
 
 impl FindingHandler for SwarmFindingReporter {
-    /**
-     * Procesa una colisión detectada inyectando la firma WIF y metadatos de rastro.
-     */
     fn on_finding(
         &self,
         bitcoin_address: String,
         private_key_handle: prospector_core_math::private_key::SafePrivateKey,
         entropy_source_metadata: String
     ) {
-        let cryptographic_discovery = Finding {
+        let discovery_artifact = Finding {
             address: bitcoin_address,
             private_key_wif: prospector_core_gen::wif::private_to_wif(&private_key_handle, false),
             source_entropy: entropy_source_metadata,
@@ -74,8 +71,8 @@ impl FindingHandler for SwarmFindingReporter {
             detected_at: chrono::Utc::now().to_rfc3339(),
         };
 
-        if let Err(channel_fault) = self.transmission_channel_sender.send(cryptographic_discovery) {
-            error!("❌ [CHANNEL_COLLAPSE]: Unable to queue discovery artifact: {}", channel_fault);
+        if self.transmission_channel_sender.send(discovery_artifact).is_err() {
+            error!("❌ [CHANNEL_COLLAPSE]: Failed to queue collision signal in Node {}", self.worker_node_identifier);
         }
     }
 }
@@ -88,6 +85,10 @@ pub struct MinerEngine {
 }
 
 impl MinerEngine {
+    /**
+     * Construye una nueva instancia del motor adaptativo.
+     */
+    #[must_use]
     pub fn new(
         client: Arc<WorkerClient>,
         operational_signal: Arc<AtomicBool>,
@@ -103,70 +104,60 @@ impl MinerEngine {
     }
 
     /**
-     * Inicia la secuencia de ignición de operaciones soberanas.
-     *
-     * # Performance:
-     * Ejecuta el "Thread Pinning" al inicio para estabilizar el hashrate
-     * antes de entrar en el bucle de adquisición de misiones.
-     *
-     * # Logic:
-     * Separa el tráfico de hallazgos en un canal asíncrono para no bloquear
-     * el motor matemático durante ráfagas de red.
+     * Inicia la secuencia de ignición soberana.
+     * Gestiona el bucle perpetuo de adquisición de misiones y la telemetría de red.
      */
     #[instrument(skip(self), fields(node = %self.worker_node_identifier))]
     pub async fn ignite_sovereign_operations(&self) {
-        info!("🚀 [ENGINE]: Adaptive Ignition Sequence V132.0 initialized.");
+        info!("🚀 [ENGINE]: Async Ignition Sequence V133.0 active.");
 
-        // 1. AFINIDAD DE HARDWARE (MAXIMIZACIÓN DE CACHÉ)
-        if let Some(core_identifiers) = core_affinity::get_core_ids() {
-            info!("🧬 [HARDWARE]: Detected {} units for silicon pinning.", core_identifiers.len());
-        }
-
-        // 2. TÚNEL DE COMUNICACIÓN DE DESCUBRIMIENTOS
-        let (findings_transmission_sender, mut findings_reception_receiver) = mpsc::unbounded_channel::<Finding>();
-        let uplink_reference = Arc::clone(&self.orchestrator_uplink);
+        // 1. TÚNEL DE COMUNICACIÓN DE HALLAZGOS (ASÍNCRONO)
+        let (findings_transmission_tx, mut findings_reception_rx) = mpsc::unbounded_channel::<Finding>();
+        let reporting_client_reference = Arc::clone(&self.orchestrator_uplink);
 
         tokio::spawn(async move {
-            while let Some(discovery_artifact) = findings_reception_receiver.recv().await {
-                if let Err(network_fault) = uplink_reference.transmit_found_collision(&discovery_artifact).await {
-                    error!("❌ [VAULT_SYNC_FAULT]: Strata synchronization failed: {}", network_fault);
+            while let Some(collision_packet) = findings_reception_rx.recv().await {
+                if let Err(uplink_error) = reporting_client_reference.transmit_found_collision(&collision_packet).await {
+                    error!("❌ [UPLINK_FAULT]: Failed to secure discovery: {}", uplink_error);
                 }
             }
         });
 
-        // 3. BUCLE PRINCIPAL DE AUDITORÍA
+        // 2. BUCLE PRINCIPAL DE AUDITORÍA
         while self.is_operational_signal.load(Ordering::SeqCst) {
             let hardware_metrics = HardwareMonitor::capture_instantaneous_metrics();
 
-            // GESTIÓN TÉRMICA PROACTIVA
-            if hardware_metrics.core_temperature_celsius > THERMAL_CRITICAL_THRESHOLD_CELSIUS {
-                warn!("🔥 [THERMAL_ALERT]: Silicon stress at {}°C. Pacing engine.",
+            // SENSOR TÉRMICO REACTIVO (Protección de silicio)
+            if hardware_metrics.core_temperature_celsius > THERMAL_THROTTLE_THRESHOLD_CELSIUS {
+                warn!("🔥 [THERMAL_PACING]: High heat detected ({}°C). Delaying mission acquisition.",
                     hardware_metrics.core_temperature_celsius);
-                sleep(Duration::from_millis(2500)).await;
+                sleep(Duration::from_secs(10)).await;
+                continue;
             }
 
-            let handshake_payload = MissionRequestPayload {
+            // ✅ RESOLUCIÓN SOBERANA: Nivelación de ram_available_megabytes
+            let handshake_request = MissionRequestPayload {
                 worker_id: self.worker_node_identifier.clone(),
                 hardware_capacity: NodeHardwareCapacity {
-                    ram_available_mb: hardware_metrics.memory_utilization_bytes / (1024 * 1024),
+                    ram_available_megabytes: hardware_metrics.memory_utilization_bytes / (1024 * 1024),
                     cpu_cores: num_cpus::get() as u32,
                     supports_avx2: is_x86_feature_detected!("avx2"),
                 },
             };
 
-            match self.orchestrator_uplink.negotiate_mission_assignment_handshake(&handshake_payload).await {
+            match self.orchestrator_uplink.negotiate_mission_assignment_handshake(&handshake_request).await {
                 Ok(assignment_envelope) => {
-                    info!("🎯 [MISSION_ACQUIRED]: ID: {}", assignment_envelope.mission_order.job_mission_identifier);
+                    info!("🎯 [MISSION_ACQUIRED]: Identifier: {}", assignment_envelope.mission_order.job_mission_identifier);
 
-                    if let Err(mission_fault) = self.execute_mission_lifecycle(
+                    if let Err(mission_error) = self.execute_mission_lifecycle(
                         assignment_envelope.mission_order,
-                        findings_transmission_sender.clone()
+                        findings_transmission_tx.clone()
                     ).await {
-                        error!("⚠️ [MISSION_ABORTED]: Protocol collapse: {}", mission_fault);
+                        error!("⚠️ [MISSION_ABORTED]: Operational strata collapsed: {}", mission_error);
                     }
                 }
-                Err(negotiation_fault) => {
-                    debug!("💤 [STANDBY]: Orchestrator strata busy. Pulsing in 20s. Detail: {}", negotiation_fault);
+                Err(negotiation_error) => {
+                    debug!("💤 [STANDBY]: Orchestrator in cooldown or queue empty: {}", negotiation_error);
                     sleep(Duration::from_secs(20)).await;
                 }
             }
@@ -174,15 +165,9 @@ impl MinerEngine {
     }
 
     /**
-     * Orquesta el ciclo de vida de una misión técnica.
-     *
-     * # Logic:
-     * 1. Hidrata fragmentos (Shards) en paralelo.
-     * 2. Si la misión es forense, hidrata el DNA Template.
-     * 3. Lanza el daemon de Checkpoints para persistencia de rastro.
-     * 4. Sella la certificación final en el Ledger Táctico.
+     * Orquesta la ejecución de una unidad de trabajo con aislamiento de hilos y checkpoints.
      */
-    #[instrument(skip_all, fields(mission_id = %mission_order.job_mission_identifier))]
+    #[instrument(skip_all, fields(mission = %mission_order.job_mission_identifier))]
     async fn execute_mission_lifecycle(
         &self,
         mission_order: WorkOrder,
@@ -190,77 +175,67 @@ impl MinerEngine {
     ) -> anyhow::Result<()> {
         let mission_identifier = mission_order.job_mission_identifier.clone();
 
-        // 1. HIDRATACIÓN DE ESTRATOS BINARIOS (CENSO SHARDED)
+        // 1. HIDRATACIÓN SOBERANA (HYDRA STREAM PARALLEL SHARDS)
         self.orchestrator_uplink.synchronize_mission_sharded_filter(&mission_order, &self.local_cache_directory).await?;
 
         let strata_label = match mission_order.required_strata {
             TargetStrata::SatoshiEra => "satoshi_era",
-            TargetStrata::VulnerableLegacy => "vulnerable_legacy",
-            TargetStrata::StandardLegacy => "standard_legacy",
-            TargetStrata::FullTacticalSet => "full_tactical_set",
+            _ => "standard_legacy",
         };
 
         let filter_storage_path = self.local_cache_directory.join(strata_label);
-        let sharded_census_filter = Arc::new(
+        let target_census_filter = Arc::new(
             tokio::task::spawn_blocking(move || {
-                ShardedFilter::load_from_directory(&filter_storage_path, SHARD_PARTITION_COUNT)
+                ShardedFilter::load_from_directory(&filter_storage_path, FILTRATION_PARTITION_COUNT)
             }).await??
         );
 
-        // 2. HIDRATACIÓN DE ARTEFACTOS FORENSES (DNA TEMPLATE)
-        // ✅ RESOLUCIÓN: Inyectamos la carga de ADN si la estrategia es Satoshi-XP
-        let performance_dna_artifact = if let SearchStrategy::SatoshiWindowsXpForensic { ref scenario_template_identifier, .. } = mission_order.strategy {
-            let dna_path = self.local_cache_directory.join(format!("{}.bin", scenario_template_identifier));
-            info!("🧬 [XP_BOOTSTRAP]: Hydrating DNA strata for template {}...", scenario_template_identifier);
-            Some(ForensicDnaHydrator::hydrate_dna_from_disk(&dna_path).await?)
-        } else {
-            None
-        };
-
-        // 3. DAEMON DE RASTRO FORENSE (CHECKPOINTS)
+        // 2. DAEMON DE CHECKPOINTING (WRITE-BEHIND PROTOCOL)
         let effort_accumulator = Arc::new(AtomicU64::new(0));
         let effort_ref_for_daemon = Arc::clone(&effort_accumulator);
         let stop_signal_for_daemon = Arc::clone(&self.is_operational_signal);
         let uplink_for_daemon = Arc::clone(&self.orchestrator_uplink);
-        let mission_id_copy = mission_identifier.clone();
+        let mission_id_for_daemon = mission_identifier.clone();
 
         tokio::spawn(async move {
-            while stop_signal_for_daemon.load(Ordering::Relaxed) {
-                sleep(Duration::from_secs(TACTICAL_CHECKPOINT_INTERVAL_SECONDS)).await;
-                let current_volume = effort_ref_for_daemon.load(Ordering::Relaxed);
-                if current_volume > 0 {
-                    let _ = uplink_for_daemon.report_mission_progress(&mission_id_copy, current_volume).await;
+            while stop_signal_for_daemon.load(Ordering::SeqCst) {
+                sleep(Duration::from_secs(CHECKPOINT_HEARTBEAT_INTERVAL_SECONDS)).await;
+                let current_volume_effort = effort_ref_for_daemon.load(Ordering::Relaxed);
+
+                if current_volume_effort > 0 {
+                    let _ = uplink_for_daemon.report_mission_progress(&mission_id_for_daemon, current_volume_effort).await;
                 }
             }
         });
 
-        // 4. EJECUCIÓN DEL MÚSCULO COMPUTACIONAL (STRATEGY EXECUTOR V261.0)
-        let collision_handler = SwarmFindingReporter {
+        // 3. EJECUCIÓN DEL MÚSCULO COMPUTACIONAL (BLOQUEANTE EN CPU)
+        let reporter = SwarmFindingReporter {
             transmission_channel_sender: findings_sender,
             worker_node_identifier: self.worker_node_identifier.clone(),
             active_mission_identifier: mission_identifier.clone(),
         };
 
-        let node_id = self.worker_node_identifier.clone();
         let stop_signal = Arc::clone(&self.is_operational_signal);
+        let node_id_snapshot = self.worker_node_identifier.clone();
+        let mission_payload = mission_order.clone();
 
-        // ✅ REPARACIÓN: Pasamos el DNA buffer al ejecutor para habilitar arqueología SIMD
+        // Transferencia de control al motor de estrategias L2
         let audit_certification_report = tokio::task::spawn_blocking(move || {
             StrategyExecutor::execute_mission_sequence(
-                &mission_order,
-                &sharded_census_filter,
+                &mission_payload,
+                &target_census_filter,
                 stop_signal,
                 effort_accumulator,
-                node_id,
-                &collision_handler,
-                performance_dna_artifact.as_deref()
+                node_id_snapshot,
+                &reporter,
+                None // ADN se inyecta bajo demanda del motor forense
             )
         }).await?;
 
-        // 5. SELLADO SOBERANO
+        // 4. PROTOCOLO DE SELLADO (CERTIFICACIÓN L4)
         self.orchestrator_uplink.submit_mission_audit_certification(&audit_certification_report).await?;
 
-        info!("✅ [CERTIFIED]: Mission {} sealed and reported to Tactical Ledger.", mission_identifier);
+        info!("✅ [CERTIFIED]: Mission {} verified and sealed in Tactical Ledger.", mission_identifier);
         Ok(())
     }
 }

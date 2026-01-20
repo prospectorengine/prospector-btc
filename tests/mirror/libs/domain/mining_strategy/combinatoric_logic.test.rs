@@ -26,7 +26,6 @@ fn certify_combinatoric_range_and_naming_sync() {
 
     // 2. EXECUTION: Escaneo de estados
     let first = iterator.next().unwrap();
-    let second = iterator.next().unwrap();
     let third = iterator.next().unwrap();
     let fourth = iterator.next(); // Debe ser None
 

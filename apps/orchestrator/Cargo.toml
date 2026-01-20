@@ -193,3 +193,7 @@ path = "../../tests/mirror/apps/orchestrator/lib_structure.test.rs"
 [[test]]
 name = "route_dispatch_test"
 path = "../../tests/mirror/apps/orchestrator/route_dispatch.test.rs"
+
+[[test]]
+name = "resurrection_v180_test"
+path = "../../tests/mirror/apps/orchestrator/services/resurrection_v180.test.rs"

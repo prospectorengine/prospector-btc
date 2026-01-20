@@ -1,72 +1,68 @@
 // [apps/orchestrator/src/services/outbox_relay.rs]
 /*!
  * =================================================================
- * APARATO: SOVEREIGN RELAY SERVICE (V200.2 - GALVANIC MASTER)
+ * APARATO: SOVEREIGN RELAY SERVICE (V200.5 - GALVANIC ARCHITECT)
  * CLASIFICACIÓN: BACKGROUND INFRASTRUCTURE SERVICE (ESTRATO L4)
  * RESPONSABILIDAD: SINCRONIZACIÓN TÁCTICA -> ESTRATÉGICA (MOTOR A -> B)
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. GALVANIC SINCRO: Implementa el patrón Outbox para garantizar que ningún
- *    crédito de Billing o punto de XP se pierda ante fallos de red.
- * 2. IDEMPOTENCY 409: Gestiona conflictos de duplicidad en Supabase tratándolos
- *    como éxitos de paridad, asegurando el sellado del Ledger Táctico.
- * 3. NOMINAL PURITY: Erradicación de abreviaciones. 'hq' -> 'strategic_headquarters'.
- * 4. HYGIENE: Uso de rastro forense #[instrument] y manejo exhaustivo de Result.
+ * 1. REPOSITORY DELEGATION: Elimina la lógica SQL interna (DRY). Delega la
+ *    persistencia al 'ArchivalRepository' nivelado en el Estrato L3.
+ * 2. IDEMPOTENCY 409: Implementa el protocolo de aceptación de conflictos
+ *    como éxito de paridad, asegurando el sellado del rastro forense.
+ * 3. NOMINAL PURITY: Erradicación total de abreviaciones. 'hq' -> 'strategic_headquarters'.
+ * 4. PANOPTICON SYNC: Instrumentación #[instrument] enriquecida para que
+ *    cada latido de sincronía sea visible en el Dashboard Zenith.
  *
- * # Mathematical Proof (Sync Determinism):
- * El servicio garantiza consistencia eventual entre el Músculo (Turso) y el
- * Cuartel General (Supabase). La integridad se mantiene mediante una máquina
- * de estados: [Pending] -> [Transmitting] -> [Synced | Failed].
+ * # Mathematical Proof (Consistency Loop):
+ * El servicio garantiza que un evento 'E' solo sea marcado como 'synced' en
+ * Engine A tras recibir un ACK (2xx) o un CONFLICT (409) de Engine B,
+ * cerrando el bucle de verdad entre nubes.
  * =================================================================
  */
 
 use crate::state::AppState;
+use prospector_infra_db::repositories::ArchivalRepository;
 use reqwest::{Client, StatusCode};
 use std::time::Duration;
-use tokio::time::sleep;
+use tokio::time::{sleep};
 use tracing::{info, error, warn, instrument, debug};
-use serde_json::{json, Value};
+use serde_json::Value;
 
-/// Frecuencia de escrutinio del Outbox: 15 segundos para optimizar recursos.
+/// Frecuencia de escrutinio del Outbox (15 segundos).
 const OUTBOX_SCAN_INTERVAL_SECONDS: u64 = 15;
-/// Volumen máximo de ráfaga para saturar el túnel neural sin congestión.
+/// Volumen máximo de ráfaga para optimizar el RTT trans-nube.
 const RELAY_BATCH_MAX_SIZE: i64 = 50;
-/// Límite de reintentos antes de la incineración lógica del evento.
-const MAXIMUM_RETRY_THRESHOLD: i64 = 10;
 
 /**
  * Motor de sincronía galvánica entre el Músculo Táctico y el Cuartel General.
  */
 pub struct SovereignRelayService {
-    /// Cliente de red endurecido con TLS 1.3 para transporte trans-nube.
+    /// Cliente de red endurecido con TLS 1.3.
     network_uplink_client: Client,
     /// Referencia compartida al estado maestro (SSoT).
     application_shared_state: AppState,
-    /// Endpoint de Supabase cristalizado en la ignición.
+    /// Endpoint estratégico cristalizado.
     strategic_headquarters_url: String,
-    /// Llave de servicio autorizada para bypass de RLS estratégico.
+    /// Llave de servicio con bypass de RLS.
     strategic_headquarters_key: String,
 }
 
 impl SovereignRelayService {
     /**
      * Forja una nueva instancia del servicio extrayendo la configuración de entorno.
-     *
-     * # Errors:
-     * - Pánico si 'SUPABASE_URL' o 'SUPABASE_SERVICE_ROLE_KEY' están ausentes en el entorno.
      */
     pub fn new(application_state: AppState) -> Self {
         let network_client = Client::builder()
             .timeout(Duration::from_secs(45))
-            .tcp_keepalive(Some(Duration::from_secs(60)))
-            .user_agent("Prospector-Galvanic-Relay/V200.2")
+            .user_agent("Prospector-Sovereign-Relay/V200.5")
             .build()
-            .expect("FATAL_RELAY_INIT: Failed to initialize Strategic Network Bridge.");
+            .expect("FATAL_RELAY_INIT: Strategic Network Bridge failed.");
 
         let headquarters_url = std::env::var("SUPABASE_URL")
-            .expect("CRITICAL_CONFIG_VOID: SUPABASE_URL is not defined in runtime.");
+            .expect("CRITICAL_CONFIG_VOID: SUPABASE_URL not defined.");
         let headquarters_key = std::env::var("SUPABASE_SERVICE_ROLE_KEY")
-            .expect("CRITICAL_CONFIG_VOID: SUPABASE_SERVICE_ROLE_KEY is not defined.");
+            .expect("CRITICAL_CONFIG_VOID: SUPABASE_SERVICE_ROLE_KEY not defined.");
 
         Self {
             network_uplink_client: network_client,
@@ -78,75 +74,67 @@ impl SovereignRelayService {
 
     /**
      * Inicia el bucle perpetuo de vigilancia y vaciado del Outbox.
-     * Operación no bloqueante inyectada en el reactor de Tokio.
      */
     pub async fn spawn_relay_loop(self) {
-        info!("🔌 [STRATEGIC_RELAY]: Galvanic Bridge active. Monitoring Tactical Outbox.");
+        info!("🔌 [STRATEGIC_RELAY]: Galvanic Bridge active. Syncing Motor A ↔ Motor B.");
 
         loop {
-            // Pulso de ciclo táctico
             sleep(Duration::from_secs(OUTBOX_SCAN_INTERVAL_SECONDS)).await;
 
-            // 1. ADQUISICIÓN DE RÁFAGA DESDE MOTOR A (ESTRATO L3)
-            match self.fetch_pending_outbox_batch().await {
+            // 1. ADQUISICIÓN DE REPOSITORIO (L3)
+            let archival_repository = ArchivalRepository::new(self.application_shared_state.database_client.clone());
+
+            // 2. DRENAJE TÁCTICO: Obtención de ráfaga pendiente
+            match archival_repository.fetch_pending_outbox_batch(RELAY_BATCH_MAX_SIZE).await {
                 Ok(outbox_batch) if !outbox_batch.is_empty() => {
-                    info!("📤 [RELAY]: Synchronizing ráfaga of {} strategic events to HQ.", outbox_batch.len());
-                    self.process_batch_elements(outbox_batch).await;
+                    info!("📤 [RELAY]: Synchronizing {} strategic events to HQ.", outbox_batch.len());
+                    self.process_batch_elements(&archival_repository, outbox_batch).await;
                 },
-                Ok(_) => debug!("💤 [RELAY]: Tactical Outbox is lean. All strata synchronized."),
+                Ok(_) => debug!("💤 [RELAY]: Tactical Outbox is lean. Strata synchronized."),
                 Err(database_fault) => error!("❌ [RELAY_FAULT]: Tactical strata scan failed: {}", database_fault),
             }
         }
     }
 
     /**
-     * Procesa cada elemento de la ráfaga determinando su destino geológico en el Motor B.
+     * Procesa los elementos de la ráfaga delegando la persistencia al repositorio.
      */
-    async fn process_batch_elements(&self, outbox_batch: Vec<Value>) {
+    async fn process_batch_elements(&self, repository: &ArchivalRepository, outbox_batch: Vec<Value>) {
         for event_artifact in outbox_batch {
-            let outbox_identifier = event_artifact["outbox_identifier"].as_str().unwrap_or_default().to_string();
+            let outbox_id = event_artifact["outbox_identifier"].as_str().unwrap_or_default().to_string();
             let target_stratum = event_artifact["target_stratum"].as_str().unwrap_or_default();
-            let payload_json_string = event_artifact["payload_json"].as_str().unwrap_or("{}");
+            let payload_json = &event_artifact["payload_json"];
 
-            // MAPEO DINÁMICO: Vincula el estrato táctico con la tabla estratégica
-            let supabase_table_name = match target_stratum {
+            // MAPEO: Vincula el estrato con la tabla estratégica
+            let supabase_table = match target_stratum {
                 "BILLING_CONSUMPTION" => "billing_credits",
                 "HERALD_SIGNAL" => "notifications",
                 "NEXUS_XP_GAIN" => "reputation_strata",
-                "MISSION_CERTIFIED" => "archived_jobs",
+                "MISSION_CERTIFIED" => "archived_audit_reports",
                 _ => {
-                    warn!("⚠️ [RELAY_SKIP]: Unknown target stratum [{}] identified. Bypassing.", target_stratum);
+                    warn!("⚠️ [RELAY_SKIP]: Unknown stratum [{}]. Bypassing.", target_stratum);
                     continue;
                 }
             };
 
-            let payload_value_result: Result<Value, serde_json::Error> = serde_json::from_str(payload_json_string);
-
-            if let Ok(payload_value) = payload_value_result {
-                // 2. TRANSMISIÓN TÁCTICA AL CUARTEL GENERAL (MOTOR B)
-                match self.transmit_to_strategic_headquarters(supabase_table_name, &payload_value).await {
-                    Ok(_) => {
-                        // Sello de éxito bit-perfecto: El dato reside en ambas nubes.
-                        if let Err(seal_fault) = self.seal_event_as_synchronized(&outbox_identifier).await {
-                            error!("❌ [SEAL_FAULT]: Failed to update tactical status for {}: {}", outbox_identifier, seal_fault);
-                        }
-                        debug!("✅ [SYNC_OK]: Event {} crystallized in strategic ledger.", outbox_identifier);
-                    },
-                    Err(transmission_error) => {
-                        error!("❌ [SYNC_FAIL]: Event {} rejected by HQ: {}", outbox_identifier, transmission_error);
-                        let _ = self.increment_failure_count(&outbox_identifier).await;
+            // 3. TRANSMISIÓN TÁCTICA
+            match self.transmit_to_strategic_headquarters(supabase_table, payload_json).await {
+                Ok(_) => {
+                    // 4. SELLO DE ÉXITO: Actualización en Engine A vía Repositorio
+                    if let Err(seal_fault) = repository.seal_synchronized_event(&outbox_id).await {
+                        error!("❌ [SEAL_FAULT]: Failed to update tactical status for {}: {}", outbox_id, seal_fault);
                     }
+                },
+                Err(transmission_error) => {
+                    error!("❌ [SYNC_FAIL]: Event {} rejected by HQ: {}", outbox_id, transmission_error);
+                    let _ = repository.report_sync_failure(&outbox_id).await;
                 }
-            } else {
-                error!("❌ [CORRUPTION_FAULT]: Event {} contains malformed JSON strata.", outbox_identifier);
-                let _ = self.increment_failure_count(&outbox_identifier).await;
             }
         }
     }
 
     /**
-     * Motor de transporte HTTP hacia la Capa REST de Supabase (PostgREST).
-     * Implementa el protocolo de Idempotencia 409.
+     * Motor de transporte HTTP con soporte de Idempotencia.
      */
     #[instrument(skip(self, data_payload), fields(table = %target_table))]
     async fn transmit_to_strategic_headquarters(
@@ -167,68 +155,12 @@ impl SovereignRelayService {
 
         let status_code = network_response.status();
 
-        // RESOLUCIÓN DE IDEMPOTENCIA:
-        // 409 Conflict significa que el ID ya existe en HQ, por lo tanto, la paridad se ha alcanzado.
+        // 409 Conflict se considera éxito de paridad (Idempotencia).
         if status_code.is_success() || status_code == StatusCode::CONFLICT {
             Ok(())
         } else {
-            let error_diagnostic_body = network_response.text().await.unwrap_or_default();
-            Err(anyhow::anyhow!("STRATEGIC_REJECTION: Status {} -> {}", status_code, error_diagnostic_body))
+            let error_body = network_response.text().await.unwrap_or_default();
+            Err(anyhow::anyhow!("STRATEGIC_REJECTION: {} -> {}", status_code, error_body))
         }
-    }
-
-    // --- OPERACIONES DE PERSISTENCIA TÁCTICA (L3 - MOTOR A) ---
-
-    /**
-     * Extrae ráfagas pendientes de procesamiento del Ledger local.
-     */
-    async fn fetch_pending_outbox_batch(&self) -> anyhow::Result<Vec<Value>> {
-        let database_connection = self.application_shared_state.database_client.get_connection()?;
-        let sql_statement = "
-            SELECT outbox_identifier, payload_json, target_stratum
-            FROM outbox_strategic
-            WHERE status = 'pending' AND retry_count < ?1
-            ORDER BY created_at ASC LIMIT ?2
-        ";
-
-        let mut query_results = database_connection.query(
-            sql_statement,
-            libsql::params![MAXIMUM_RETRY_THRESHOLD, RELAY_BATCH_MAX_SIZE]
-        ).await?;
-
-        let mut outbox_batch_collection = Vec::new();
-
-        while let Some(data_row) = query_results.next().await? {
-            outbox_batch_collection.push(json!({
-                "outbox_identifier": data_row.get::<String>(0)?,
-                "payload_json": data_row.get::<String>(1)?,
-                "target_stratum": data_row.get::<String>(2)?
-            }));
-        }
-        Ok(outbox_batch_collection)
-    }
-
-    /**
-     * Marca un evento como sincronizado en el Motor A.
-     */
-    async fn seal_event_as_synchronized(&self, outbox_identifier: &str) -> anyhow::Result<()> {
-        let database_connection = self.application_shared_state.database_client.get_connection()?;
-        database_connection.execute(
-            "UPDATE outbox_strategic SET status = 'synced', processed_at = CURRENT_TIMESTAMP WHERE outbox_identifier = ?1",
-            libsql::params![outbox_identifier]
-        ).await?;
-        Ok(())
-    }
-
-    /**
-     * Incrementa el contador de fallos para auditoría de reintentos.
-     */
-    async fn increment_failure_count(&self, outbox_identifier: &str) -> anyhow::Result<()> {
-        let database_connection = self.application_shared_state.database_client.get_connection()?;
-        database_connection.execute(
-            "UPDATE outbox_strategic SET retry_count = retry_count + 1 WHERE outbox_identifier = ?1",
-            libsql::params![outbox_identifier]
-        ).await?;
-        Ok(())
     }
 }

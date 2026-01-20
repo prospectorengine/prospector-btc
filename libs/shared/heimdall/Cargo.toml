@@ -1,15 +1,17 @@
 # [libs/shared/heimdall/Cargo.toml]
 [package]
 name = "prospector-shared-heimdall"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Raz Podesta <metaShark Tech>"]
 description = "Nervio óptico del sistema: Gestión de telemetría estructurada, filtrado de estratos y observabilidad distribuida."
+license = "MIT"
 
 [dependencies]
 # --- MOTOR DE OBSERVABILIDAD SOBERANO ---
-# El estándar de oro para instrumentación en sistemas de alto rendimiento
-tracing = { workspace = true }
+# ✅ RESOLUCIÓN: Se inyecta la feature "attributes" para habilitar #[instrument]
+# Mantiene la versión del workspace pero extiende sus capacidades para este aparato.
+tracing = { workspace = true, features = ["attributes"] }
 
 # --- ESTRATO DE FORMATEO Y FILTRADO ---
 # Configurado para emitir JSON estructurado compatible con el Panóptico L5
@@ -25,6 +27,8 @@ thiserror = { workspace = true }
 # Requerido para la validación de integridad de logs y reportes al HUB
 reqwest = { workspace = true, features = ["blocking", "json"] }
 serde_json = { workspace = true }
+# ✅ SINCRO: Requerido para la validación de paridad en el test espejo
+tokio = { workspace = true, features = ["full"] }
 
 [lib]
 name = "prospector_shared_heimdall"
@@ -42,6 +46,7 @@ path = "../../../tests/mirror/libs/shared/heimdall/heimdall_integrity.test.rs"
 
 # =================================================================
 # NOTA TÉCNICA:
-# Heimdall implementa un modo dual: 'Compact' para desarrollo local
-# y 'JSON Flat' para producción, facilitando el análisis por IA.
+# Esta refactorización sella el error de compilación del VAIO
+# al asegurar que el compilador vea la definición de la macro
+# 'instrument' en el árbol de dependencias.
 # =================================================================
