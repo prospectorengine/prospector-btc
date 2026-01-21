@@ -37,13 +37,10 @@ path = "src/lib.rs"
 
 # =================================================================
 # MATRIZ DE CERTIFICACIÓN MATEMÁTICA (PROTOCOL TRINITY)
+# Sincronizada bit-a-bit con la estructura física del monorepo.
 # =================================================================
 
 # --- ESTRATO ALFA: CAMPO Y ARITMÉTICA ---
-
-[[test]]
-name = "field_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/field_integrity.test.rs"
 
 [[test]]
 name = "field_integrity_torture"
