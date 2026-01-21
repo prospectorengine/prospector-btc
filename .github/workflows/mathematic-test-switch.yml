@@ -1,14 +1,13 @@
 # =================================================================
-# APARATO: MATHEMATIC TEST SWITCH (V1.4 - PNPM SSoT ALIGNED)
+# APARATO: MATHEMATIC TEST SWITCH (V1.5 - SSoT ALIGNED)
 # CLASIFICACIÓN: OPS INFRASTRUCTURE (ESTRATO L6)
 # RESPONSABILIDAD: CERTIFICACIÓN MANUAL DEL NÚCLEO MATEMÁTICO L1
 #
 # VISION HIPER-HOLÍSTICA 2026:
-# 1. VERSION SOVEREIGNTY: Elimina el conflicto ERR_PNPM_BAD_PM_VERSION
-#    delegando la autoridad al campo 'packageManager' del package.json.
-# 2. RUNTIME REFINERY: Sincroniza Node.js 20.x con el motor pnpm v10.
-# 3. ATOMIC INSTALL: Implementa instalación estricta con frozen-lockfile.
-# 4. ZERO RESIDUE: Gestión de caché optimizada para binarios Rust y Node.
+# 1. VERSION HARMONIZATION: Elimina el error de colisión de pnpm
+#    delegando la autoridad total al package.json.
+# 2. RUNTIME PRECISION: Sincroniza Node.js 20.x con pnpm 10.26.1.
+# 3. ATOMIC INSTALL: Mantiene el blindaje de frozen-lockfile.
 # =================================================================
 
 name: "L1: Mathematic Test Switch"
@@ -35,7 +34,6 @@ jobs:
     name: "L1_Math_Audit"
     runs-on: ubuntu-latest
 
-    # Protección de recursos ante bucles de tortura infinitos
     timeout-minutes: 30
 
     steps:
@@ -49,7 +47,7 @@ jobs:
 
       - name: "📦 NODE_SINCRO: Install pnpm"
         uses: pnpm/action-setup@v4
-        # ✅ REPARACIÓN: Se remueve la versión hardcoded para evitar conflicto con package.json
+        # ✅ REPARACIÓN: Se remueve el bloque 'with: version' para usar la del package.json
 
       - name: "🌐 RUNTIME_SETUP: Node.js 20.x"
         uses: actions/setup-node@v4
@@ -70,7 +68,7 @@ jobs:
             ~/.cargo/git
             target
             dist
-          key: ${{ runner.os }}-l1-math-v1.4-${{ hashFiles('**/Cargo.toml', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-l1-math-v1.5-${{ hashFiles('**/Cargo.toml', 'pnpm-lock.yaml') }}
 
       - name: "💥 EXECUTION: Firing 20 Proving Grounds Tests"
         env:
