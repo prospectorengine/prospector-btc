@@ -1,15 +1,16 @@
 /**
  * =================================================================
- * APARATO: HOT STRATEGY COMMAND CONSOLE (V3.1 - REAL-TIME ENABLED)
+ * APARATO: HOT STRATEGY COMMAND CONSOLE (V3.2 - TYPE SOBERANEITY)
  * CLASIFICACIÓN: FEATURE VIEW (ESTRATO L5)
  * RESPONSABILIDAD: MANDO EN CALIENTE, AJUSTES DE KERNEL Y C2
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. NEURAL C2 LINK: Sustituye simulaciones por transmisiones reales
- *    vía WebSocket hacia el CommandRouter de Rust.
- * 2. TYPE SOVEREIGNTY: Sincronización bit-perfecta con el Enum C2Command.
- * 3. NOMINAL PURITY: 't' -> 'translations', 'mando' -> 'tactical_directive'.
- * 4. HYGIENE: Resolución total de advertencias TS6133 y TS2304.
+ * 1. UNION GUARD: Implementa guardas de tipo para 'CommandDirective',
+ *    resolviendo el error TS2339 de acceso a payload.
+ * 2. SYMBOL INTEGRITY: Re-inyección de 'Fingerprint' y eliminación de
+ *    residuos 'Zap'/'ChevronRight' (TS6133).
+ * 3. NEURAL C2 LINK: Transmisión real hacia el CommandRouter de Rust.
+ * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral.
  * =================================================================
  */
 
@@ -19,7 +20,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import {
   Settings,
   Shield,
-  Zap,
   Power,
   Trash2,
   RefreshCw,
@@ -28,7 +28,7 @@ import {
   Binary,
   ShieldAlert,
   ShieldCheck,
-  ChevronRight,
+  Fingerprint, // ✅ REPARACIÓN TS2304: Icono inyectado
   Activity,
   type LucideIcon,
 } from "lucide-react";
@@ -53,14 +53,13 @@ export default function SettingsPage(): React.ReactElement {
    * DESPACHADOR TÁCTICO SOBERANO
    * Ejecuta la comunicación asíncrona con el Orquestador L3.
    *
-   * # Mathematical Proof:
-   * La orden se emite como un comando C2 serializado. El éxito se confirma
-   * solo si el Kernel responde con un ACK (Acknowledgment) positivo.
+   * # Logic:
+   * Implementa una guarda de propiedad para manejar la unión discriminada de comandos.
    */
   const dispatch_tactical_directive = useCallback(async (directive: CommandDirective) => {
     if (!is_neural_link_connected) {
       toast.error("COMM_LINK_DOWN", {
-        description: "Uplink to Orchestrator is severed. Reconnect to send directives.",
+        description: "Uplink to Orchestrator is severed.",
         className: "font-mono text-[10px]"
       });
       return;
@@ -69,11 +68,15 @@ export default function SettingsPage(): React.ReactElement {
     set_active_processing_action(directive.action);
 
     try {
-      // 1. TRANSMISIÓN TÁCTICA (C2 Tunnel)
-      // Se utiliza el endpoint de administración para órdenes de estado mayor
+      // ✅ RESOLUCIÓN TS2339: Extracción segura de la razón solo si el payload existe
+      const transition_reason = ('payload' in directive && 'reason' in (directive.payload as any))
+        ? (directive.payload as any).reason
+        : "MANUAL_OPERATOR_COMMAND";
+
+      // TRANSMISIÓN TÁCTICA
       await apiClient.post("/admin/system/mode", {
         targetMode: directive.action === "HaltSwarm" ? "Maintenance" : "FullExecution",
-        reason: (directive.payload as any)?.reason || "MANUAL_OPERATOR_COMMAND"
+        reason: transition_reason
       });
 
       toast.success("DIRECTIVE_ACKNOWLEDGED", {
@@ -108,13 +111,13 @@ export default function SettingsPage(): React.ReactElement {
       variants={container_variants}
       className={cn("flex flex-col gap-10 font-mono pb-20 max-w-7xl mx-auto select-none")}
     >
-      {/* SECTOR 01: CABECERA DE MANDO (HOLOGRAPHIC) */}
+      {/* SECTOR 01: CABECERA DE MANDO */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-white/5 pb-10">
         <div className="flex items-center gap-6">
           <div className="relative">
             <div className="absolute inset-0 bg-zinc-500/10 blur-xl rounded-full animate-pulse" />
-            <div className="relative p-4 bg-zinc-900/50 rounded-[2rem] border border-zinc-800 shadow-inner group">
-               <Settings className="w-8 h-8 text-zinc-500 group-hover:rotate-90 transition-transform duration-1000" />
+            <div className="relative p-4 bg-zinc-900/50 rounded-[2rem] border border-zinc-800 shadow-inner">
+               <Settings className="w-8 h-8 text-zinc-500" />
             </div>
           </div>
           <div>
@@ -138,7 +141,7 @@ export default function SettingsPage(): React.ReactElement {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
 
-        {/* PANEL DE ACCIÓN TÁCTICA (8 Slots) */}
+        {/* PANEL DE ACCIÓN TÁCTICA */}
         <div className="xl:col-span-8 space-y-8">
           <Card className="bg-[#050505] border-red-900/20 overflow-hidden relative shadow-2xl">
              <div className="absolute top-0 right-0 p-8 opacity-5">
@@ -188,22 +191,28 @@ export default function SettingsPage(): React.ReactElement {
                   title="Sequential_Sweep"
                   desc="Linear U256 audit strata."
                   icon={Activity}
-                  onDispatch={() => dispatch_tactical_directive({ action: "SetGlobalStrategy", payload: { strategy: "Sequential" } })}
+                  onDispatch={() => dispatch_tactical_directive({
+                    action: "SetGlobalStrategy",
+                    payload: { strategy: "Sequential" }
+                  })}
                   loading={active_processing_action === "SetGlobalStrategy"}
                 />
                 <StrategyBox
                   id="Forensic"
                   title="Forensic_Satoshi"
                   desc="XP-Entropy reconstruction."
-                  icon={Fingerprint}
-                  onDispatch={() => dispatch_tactical_directive({ action: "SetGlobalStrategy", payload: { strategy: "Forensic" } })}
+                  icon={Fingerprint} // ✅ Uso del icono importado
+                  onDispatch={() => dispatch_tactical_directive({
+                    action: "SetGlobalStrategy",
+                    payload: { strategy: "Forensic" }
+                  })}
                   loading={active_processing_action === "SetGlobalStrategy"}
                 />
              </CardContent>
           </Card>
         </div>
 
-        {/* PANEL DE PREFERENCIAS (4 Slots) */}
+        {/* PANEL DE PREFERENCIAS */}
         <div className="xl:col-span-4 space-y-8">
           <Card className="bg-[#050505] border-zinc-800 rounded-[2rem] shadow-xl overflow-hidden">
              <CardHeader className="p-6 border-b border-white/5">
@@ -213,12 +222,12 @@ export default function SettingsPage(): React.ReactElement {
                 </CardTitle>
              </CardHeader>
              <CardContent className="p-6 space-y-6">
-                <div className="flex items-center justify-between p-5 bg-zinc-900/30 rounded-2xl border border-white/5 group/toggle">
-                   <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors italic">{translations("theme_label")}</span>
+                <div className="flex items-center justify-between p-5 bg-zinc-900/30 rounded-2xl border border-white/5">
+                   <span className="text-xs font-bold text-zinc-400 italic">{translations("theme_label")}</span>
                    <ThemeToggle />
                 </div>
 
-                <div className="flex items-center justify-between p-5 bg-zinc-900/30 rounded-2xl border border-white/5 hover:border-red-900/30 transition-all group/purge">
+                <div className="flex items-center justify-between p-5 bg-zinc-900/30 rounded-2xl border border-white/5 group/purge">
                    <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-black text-zinc-500 uppercase group-hover:text-red-500 transition-colors">Incinerate_Logs</span>
                       <span className="text-[7px] text-zinc-700 font-bold">CLEAR LOCAL PANOPTICON BUFFER</span>
@@ -226,7 +235,7 @@ export default function SettingsPage(): React.ReactElement {
                    <Button
                     variant="ghost"
                     size="icon"
-                    className="text-zinc-700 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                    className="text-zinc-700 hover:text-red-500"
                     onClick={() => dispatch_tactical_directive({ action: "PurgeLedger" })}
                    >
                      <Trash2 className="w-5 h-5" />
@@ -241,7 +250,7 @@ export default function SettingsPage(): React.ReactElement {
                 <div className="p-4 bg-emerald-500/10 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.1)] group-hover:scale-110 transition-transform duration-700">
                   <ShieldCheck className="w-8 h-8 text-emerald-500" />
                 </div>
-                <p className="text-[10px] text-emerald-500/60 font-black uppercase tracking-[0.2em] leading-relaxed font-mono italic">
+                <p className="text-[10px] text-emerald-500/60 font-black uppercase tracking-[0.2em] leading-relaxed font-mono italic text-center">
                   {translations("integrity_statement")}
                 </p>
              </div>
@@ -250,11 +259,6 @@ export default function SettingsPage(): React.ReactElement {
       </div>
 
       <footer className="flex flex-col items-center gap-6 opacity-20 pt-10 border-t border-white/5">
-         <div className="flex gap-4">
-            <div className="w-2 h-2 rounded-full bg-zinc-800" />
-            <div className="w-24 h-px bg-zinc-800" />
-            <div className="w-2 h-2 rounded-full bg-zinc-800" />
-         </div>
          <p className="text-[9px] uppercase tracking-[1.5em] text-zinc-600 font-black italic">
            Prospector_BTC // Strategic_Overlays // 2026
          </p>

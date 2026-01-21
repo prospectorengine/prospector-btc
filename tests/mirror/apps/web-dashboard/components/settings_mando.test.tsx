@@ -6,7 +6,6 @@
  * =================================================================
  */
 
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SettingsPage from "../../../../../apps/web-dashboard/app/[locale]/dashboard/settings/page";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

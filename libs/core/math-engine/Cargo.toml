@@ -11,12 +11,7 @@ description = "Motor matemático de bajo nivel para secp256k1 con soporte de tel
 secp256k1 = { workspace = true }
 sha2 = { workspace = true }
 ripemd = "0.1"
-
-# --- SERIALIZACIÓN DE ESTRATO ---
-# ✅ REPARACIÓN E0432: Habilitando herencia de Serde para FieldElement
 serde = { workspace = true }
-
-# --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
 tracing = { workspace = true }
 
 # --- UTILIDADES DE ALTO RENDIMIENTO (HEAP-FREE) ---
@@ -44,37 +39,95 @@ path = "src/lib.rs"
 # MATRIZ DE CERTIFICACIÓN MATEMÁTICA (PROTOCOL TRINITY)
 # =================================================================
 
+# --- ESTRATO ALFA: CAMPO Y ARITMÉTICA ---
+
 [[test]]
 name = "field_integrity"
 path = "../../../tests/mirror/libs/core/math_engine/field_integrity.test.rs"
-
-[[test]]
-name = "secp256k1_integrity"
-path = "../../../tests/mirror/ltracing-subscriber = { workspace = true }ibs/core/math_engine/secp256k1_integrity.test.rs"
-
-[[test]]
-name = "arithmetic_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs"
 
 [[test]]
 name = "field_integrity_torture"
 path = "../../../tests/mirror/libs/core/math_engine/field_integrity_torture.test.rs"
 
 [[test]]
-name = "scalar_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/scalar_integrity.test.rs"
+name = "field_integrity_v150"
+path = "../../../tests/mirror/libs/core/math_engine/field_integrity_v150.test.rs"
 
 [[test]]
-name = "point_jacobian_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/point_jacobian_integrity.test.rs"
+name = "field_documented_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/field_documented_integrity.test.rs"
+
+[[test]]
+name = "arithmetic_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs"
+
+[[test]]
+name = "arithmetic_sovereignty"
+path = "../../../tests/mirror/libs/core/math_engine/arithmetic_sovereignty.test.rs"
+
+# --- ESTRATO BETA: GEOMETRÍA Y CURVA ---
+
+[[test]]
+name = "secp256k1_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity.test.rs"
 
 [[test]]
 name = "secp256k1_integrity_v22"
 path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity_v22.test.rs"
 
 [[test]]
-name = "field_integrity_v150"
-path = "../../../tests/mirror/libs/core/math_engine/field_integrity_v150.test.rs"
+name = "curve_laws"
+path = "../../../tests/mirror/libs/core/math_engine/curve_laws.test.rs"
+
+[[test]]
+name = "public_key_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/public_key_integrity.test.rs"
+
+# --- ESTRATO GAMMA: PROYECCIÓN Y ESCALARES ---
+
+[[test]]
+name = "point_jacobian_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/point_jacobian_integrity.test.rs"
+
+[[test]]
+name = "point_interface"
+path = "../../../tests/mirror/libs/core/math_engine/point_interface.test.rs"
+
+[[test]]
+name = "scalar_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/scalar_integrity.test.rs"
+
+[[test]]
+name = "scalar_modular_logic"
+path = "../../../tests/mirror/libs/core/math_engine/scalar_modular_logic.test.rs"
+
+# --- ESTRATO DELTA: ACELERACIÓN Y TABLAS ---
+
+[[test]]
+name = "curve_simd_parity"
+path = "../../../tests/mirror/libs/core/math_engine/curve_simd_parity.test.rs"
+
+[[test]]
+name = "field_simd_isomorphism"
+path = "../../../tests/mirror/libs/core/math_engine/field_simd_isomorphism.test.rs"
+
+[[test]]
+name = "generator_table_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/generator_table_integrity.test.rs"
+
+# --- ESTRATO EPSILON: ALGORITMOS Y HUBS ---
+
+[[test]]
+name = "kangaroo_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/kangaroo_integrity.test.rs"
+
+[[test]]
+name = "hub_coherence"
+path = "../../../tests/mirror/libs/core/math_engine/hub_coherence.test.rs"
+
+[[test]]
+name = "prelude_sync"
+path = "../../../tests/mirror/libs/core/math_engine/prelude_sync.test.rs"
 
 # =================================================================
 # ESTRATO DE RENDIMIENTO (BENCHMARKS)

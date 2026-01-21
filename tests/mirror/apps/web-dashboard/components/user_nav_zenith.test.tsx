@@ -6,7 +6,7 @@
  * =================================================================
  */
 
-import React from "react";
+
 import { render, screen } from "@testing-library/react";
 import { UserNav } from "../../../../../apps/web-dashboard/components/layout/user-nav";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

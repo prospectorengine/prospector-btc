@@ -1,0 +1,51 @@
+name: "L1: Mathematic Test Switch"
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_profile:
+        description: 'Perfil de compilación'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  certification:
+    name: "Sovereign Math Audit"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "🛰️ DNA_ACQUISITION: Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "⚙️  ENV_STRATIFICATION: Install Rust Nightly"
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: "📦 CACHE_SYNCHRONIZATION: Restore Cargo Strata"
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-math-engine-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: "🧪 EXECUTION: Firing 20 Proving Grounds Tests"
+        env:
+          ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.test_profile }}" == "release" ]; then
+            cargo test --package prospector-core-math --release -- --nocapture
+          else
+            cargo test --package prospector-core-math -- --nocapture
+          fi
+
+      - name: "🏁 VERDICT: Final Integrity Report"
+        if: always()
+        run: echo "Mathematical certification sequence completed."
