@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-01-20T20:35:03.236Z",
+  "network": {
+    "latency_ms": "747.73",
+    "status": "OPERATIONAL"
+  },
+  "topology": {
+    "tables_found": [
+      "jobs",
+      "findings",
+      "identities",
+      "system_state",
+      "scenario_templates",
+      "test_scenarios",
+      "workers",
+      "academy_progress",
+      "knowledge_modules",
+      "affiliate_network",
+      "outbox_strategic"
+    ],
+    "schema_integrity": "DRIFT_DETECTED",
+    "missing_columns_in_jobs": [
+      "dataset_resource_locator",
+      "target_public_key_hexadecimal",
+      "range_width_max"
+    ]
+  },
+  "content": {
+    "total_missions": 4322,
+    "active_identities": 8,
+    "stuck_leases": 0
+  },
+  "verdict": "DEGRADED"
+}

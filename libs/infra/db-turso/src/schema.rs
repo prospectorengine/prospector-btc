@@ -1,21 +1,18 @@
 // [libs/infra/db-turso/src/schema.rs]
 /*!
  * =================================================================
- * APARATO: SOVEREIGN DATABASE SCHEMA (V152.0 - RESILIENCE MASTER)
+ * APARATO: SOVEREIGN DATABASE SCHEMA (V154.0 - FULL SYNC)
  * CLASIFICACIÓN: INFRASTRUCTURE LAYER (ESTRATO L3)
  * RESPONSABILIDAD: GOBERNANZA ESTRUCTURAL E IDEMPOTENCIA TOTAL
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. STRATEGIC OUTBOX: Inyecta el sustrato físico para el protocolo
- *    de resiliencia anti-apagón, permitiendo sincronía diferida con Motor B.
- * 2. NOMINAL PURITY: Erradicación de abreviaciones en definiciones SQL.
- * 3. IDEMPOTENCIA SOBERANA: Gestión de errores para migraciones en caliente.
- * 4. PERFORMANCE: Índices de polling O(1) para el Strategic Relay Daemon.
- *
- * # Mathematical Proof (Atomicity):
- * El uso de tablas de Outbox garantiza que las mutaciones en el Ledger Táctico
- * y el registro de eventos estratégicos ocurran dentro de la misma
- * transacción ACID, eliminando estados inconsistentes entre nubes.
+ * 1. GENESIS-EVOLUTION PARITY: Sincroniza las definiciones base con las
+ *    mutaciones evolutivas para una ignición instantánea.
+ * 2. HYDRA-ID OPTIMIZATION: Inyección de columnas de identidad persistente
+ *    (fingerprint, proxy, metabolic_pulse) directamente en el Génesis.
+ * 3. INDEX HARDENING: Adición de 'index_identities_metabolic' para
+ *    acelerar la vigilancia del pulso humano.
+ * 4. ZERO ABBREVIATIONS: Cumplimiento del estándar nominal de la Tesis.
  * =================================================================
  */
 
@@ -25,8 +22,7 @@ use tracing::{debug, info, instrument, warn};
 
 /**
  * ESTRATO 1: SOLIDIFICACIÓN (Génesis de Tablas)
- * Define las entidades base del ecosistema Prospector.
- * ✅ INCREMENTAL: Adición de 'TABLE_OUTBOX_STRATEGIC'.
+ * ✅ NIVELADO: Incluye todas las columnas de estrategias L2 y Hydra-ID.
  */
 const TACTICAL_TABLES: &[(&str, &str)] = &[
     ("TABLE_JOBS", r#"
@@ -35,8 +31,23 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
             range_start TEXT NOT NULL,
             range_end TEXT NOT NULL,
             status TEXT DEFAULT 'queued',
+            operator_id TEXT DEFAULT 'SYSTEM_DELEGATE',
+            parent_mission_id TEXT,
+            strategy_type TEXT DEFAULT 'Sequential',
+            total_hashes_effort TEXT DEFAULT '0',
+            execution_duration_ms INTEGER DEFAULT 0,
+            audit_footprint_checkpoint TEXT,
+            integrity_hash TEXT,
+            required_strata TEXT DEFAULT 'StandardLegacy',
+            dataset_resource_locator TEXT,
+            target_public_key_hexadecimal TEXT,
+            range_width_max INTEGER,
+            target_mock_iterations INTEGER,
+            diagnostic_seed TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            completed_at DATETIME,
+            archived_at DATETIME
         );
     "#),
     ("TABLE_IDENTITIES", r#"
@@ -46,8 +57,15 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
             email TEXT NOT NULL,
             credentials_json TEXT NOT NULL,
             user_agent TEXT,
+            status TEXT DEFAULT 'active',
+            leased_until DATETIME,
+            cooldown_until DATETIME,
+            browser_fingerprint_json TEXT,
+            proxy_url TEXT,
+            last_metabolic_pulse DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            usage_count INTEGER DEFAULT 0,
             UNIQUE(platform, email)
         );
     "#),
@@ -94,79 +112,70 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
         CREATE TABLE IF NOT EXISTS outbox_strategic (
             outbox_identifier TEXT PRIMARY KEY,
             payload_json TEXT NOT NULL,
-            target_stratum TEXT NOT NULL, -- Ej: 'BILLING_CONSUMPTION', 'NEXUS_XP'
-            status TEXT DEFAULT 'pending', -- 'pending', 'synced', 'failed'
+            target_stratum TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
             retry_count INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             processed_at DATETIME
+        );
+    "#),
+    ("TABLE_FINDINGS", r#"
+        CREATE TABLE IF NOT EXISTS findings (
+            id TEXT PRIMARY KEY,
+            address TEXT NOT NULL,
+            private_key_wif TEXT NOT NULL,
+            source_entropy TEXT,
+            wallet_type TEXT,
+            found_by_worker TEXT,
+            job_id TEXT,
+            detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            archived_at DATETIME
         );
     "#)
 ];
 
 /**
  * ESTRATO 2: EVOLUCIÓN (Mutaciones de Columna)
- * Asegura que las tablas existentes se adapten a las nuevas capacidades.
+ * Mantenido para resiliencia de bases de datos existentes.
  */
 const EVOLUTIONARY_STRATA: &[(&str, &str)] = &[
-    // --- SOPORTE HYDRA-SLICER & AFILIADOS ---
-    ("JOB_OPERATOR_ID", "ALTER TABLE jobs ADD COLUMN operator_id TEXT DEFAULT 'SYSTEM_DELEGATE'"),
-    ("JOB_PARENT_ID", "ALTER TABLE jobs ADD COLUMN parent_mission_id TEXT"),
-    ("JOB_STRATEGY", "ALTER TABLE jobs ADD COLUMN strategy_type TEXT DEFAULT 'Sequential'"),
-    ("JOB_EFFORT", "ALTER TABLE jobs ADD COLUMN total_hashes_effort TEXT DEFAULT '0'"),
-    ("JOB_DURATION", "ALTER TABLE jobs ADD COLUMN execution_duration_ms INTEGER DEFAULT 0"),
-    ("JOB_CHECKPOINT", "ALTER TABLE jobs ADD COLUMN audit_footprint_checkpoint TEXT"),
-    ("JOB_INTEGRITY", "ALTER TABLE jobs ADD COLUMN integrity_hash TEXT"),
-    ("JOB_STRATA", "ALTER TABLE jobs ADD COLUMN required_strata TEXT DEFAULT 'StandardLegacy'"),
-    ("JOB_COMPLETED_AT", "ALTER TABLE jobs ADD COLUMN completed_at DATETIME"),
-    ("JOB_ARCHIVED_AT", "ALTER TABLE jobs ADD COLUMN archived_at DATETIME"),
-
-    // --- SEGURIDAD E IDENTIDAD ---
-    ("IDENTITY_STATUS", "ALTER TABLE identities ADD COLUMN status TEXT DEFAULT 'active'"),
-    ("IDENTITY_LEASE", "ALTER TABLE identities ADD COLUMN leased_until DATETIME"),
-    ("IDENTITY_COOLDOWN", "ALTER TABLE identities ADD COLUMN cooldown_until DATETIME"),
-
-    // --- HALLAZGOS ---
-    ("FINDING_WIF", "ALTER TABLE findings ADD COLUMN private_key_wif TEXT NOT NULL DEFAULT 'PENDING'"),
-    ("FINDING_JOB", "ALTER TABLE findings ADD COLUMN job_id TEXT")
+    ("JOB_DICT_LOCATOR", "ALTER TABLE jobs ADD COLUMN dataset_resource_locator TEXT"),
+    ("JOB_KANGAROO_PUBKEY", "ALTER TABLE jobs ADD COLUMN target_public_key_hexadecimal TEXT"),
+    ("JOB_KANGAROO_WIDTH", "ALTER TABLE jobs ADD COLUMN range_width_max INTEGER"),
+    ("JOB_PLAYGROUND_ITER", "ALTER TABLE jobs ADD COLUMN target_mock_iterations INTEGER"),
+    ("JOB_PLAYGROUND_SEED", "ALTER TABLE jobs ADD COLUMN diagnostic_seed TEXT"),
+    ("IDENTITY_FINGERPRINT", "ALTER TABLE identities ADD COLUMN browser_fingerprint_json TEXT"),
+    ("IDENTITY_PROXY", "ALTER TABLE identities ADD COLUMN proxy_url TEXT"),
+    ("IDENTITY_METABOLIC", "ALTER TABLE identities ADD COLUMN last_metabolic_pulse DATETIME"),
+    ("FINDING_ARCHIVED", "ALTER TABLE findings ADD COLUMN archived_at DATETIME")
 ];
 
 /**
  * ESTRATO 3: ENDURECIMIENTO (Índices de Aceleración)
  */
 const ACCELERATION_INDEXES: &[(&str, &str)] = &[
-    ("IDX_JOBS_OPERATOR", "CREATE INDEX IF NOT EXISTS idx_jobs_operator ON jobs(operator_id);"),
-    ("IDX_JOBS_PARENT", "CREATE INDEX IF NOT EXISTS idx_jobs_parent ON jobs(parent_mission_id);"),
-    ("IDX_ACADEMY_STATUS", "CREATE INDEX IF NOT EXISTS idx_academy_operator ON academy_progress(operator_id);"),
-    ("IDX_AFFILIATE_TREE", "CREATE INDEX IF NOT EXISTS idx_affiliate_parent ON affiliate_network(parent_affiliate_id);"),
-    ("IDX_IDENTITIES_SYNC", "CREATE INDEX IF NOT EXISTS idx_identities_availability ON identities(platform, status, leased_until, cooldown_until);"),
-    // ✅ NUEVO: Índice para el motor de relevo asíncrono
-    ("IDX_OUTBOX_POLLING", "CREATE INDEX IF NOT EXISTS idx_outbox_status_pending ON outbox_strategic(status, created_at);")
+    ("INDEX_JOBS_OPERATOR", "CREATE INDEX IF NOT EXISTS index_jobs_operator ON jobs(operator_id);"),
+    ("INDEX_IDENTITIES_SYNC", "CREATE INDEX IF NOT EXISTS index_identities_availability ON identities(platform, status, leased_until, cooldown_until);"),
+    ("INDEX_IDENTITIES_METABOLIC", "CREATE INDEX IF NOT EXISTS index_identities_pulse ON identities(last_metabolic_pulse);"),
+    ("INDEX_OUTBOX_POLLING", "CREATE INDEX IF NOT EXISTS index_outbox_status_pending ON outbox_strategic(status, created_at);"),
+    ("INDEX_FINDINGS_SYNC", "CREATE INDEX IF NOT EXISTS index_findings_archival ON findings(archived_at);")
 ];
 
 /**
- * Ejecuta la secuencia maestra de sincronización del esquema estructural.
- *
- * # Errors:
- * Retorna error si alguna tabla base falla en solidificarse.
- *
- * # Performance:
- * Operaciones idempotentes que solo mutan el esquema si es necesario.
+ * Ejecuta la secuencia maestra de sincronización V154.0.
  */
 #[instrument(skip(database_connection))]
 pub async fn apply_full_sovereign_schema(database_connection: &Connection) -> Result<()> {
-    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V152.0...");
+    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V154.0...");
 
     solidify_base_strata(database_connection).await?;
     execute_evolutionary_repair(database_connection).await?;
     harden_access_layer(database_connection).await?;
 
-    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V152.0 resilience strata certified.");
+    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V154.0 fully synchronized.");
     Ok(())
 }
 
-/**
- * Solidifica las tablas maestras del sistema.
- */
 async fn solidify_base_strata(database_handle: &Connection) -> Result<()> {
     for (identifier, sql_statement) in TACTICAL_TABLES {
         debug!("  ↳ Solidifying: {}", identifier);
@@ -176,9 +185,6 @@ async fn solidify_base_strata(database_handle: &Connection) -> Result<()> {
     Ok(())
 }
 
-/**
- * Ejecuta reparaciones evolutivas sobre columnas existentes.
- */
 async fn execute_evolutionary_repair(database_handle: &Connection) -> Result<()> {
     for (identifier, sql_statement) in EVOLUTIONARY_STRATA {
         match database_handle.execute(*sql_statement, ()).await {
@@ -196,9 +202,6 @@ async fn execute_evolutionary_repair(database_handle: &Connection) -> Result<()>
     Ok(())
 }
 
-/**
- * Hardening del estrato de acceso mediante índices tácticos.
- */
 async fn harden_access_layer(database_handle: &Connection) -> Result<()> {
     for (identifier, sql_statement) in ACCELERATION_INDEXES {
         debug!("  ↳ Hardening: {}", identifier);

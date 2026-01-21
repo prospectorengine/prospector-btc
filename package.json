@@ -28,6 +28,7 @@
     "db:seed": "cargo run --bin seed",
     "db:turso:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-pulse.ts",
     "db:supabase:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/supabase/connection_pulse.ts",
+    "db:turso:audit": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/omniscient-audit.ts",
 
     "___L4_QUALITY_ASSURANCE___": "--- [ TRINITY AUDIT PROTOCOL ] ---",
     "audit:all": "pnpm audit:logic && pnpm audit:system",

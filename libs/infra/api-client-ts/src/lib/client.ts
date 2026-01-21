@@ -1,13 +1,15 @@
-// INICIO DEL ARCHIVO [libs/infra/api-client-ts/src/lib/client.ts]
 /**
  * =================================================================
- * APARATO: RESILIENT API CLIENT (V17.0 - GRAPHQL ENABLED)
+ * APARATO: RESILIENT API CLIENT (V18.0 - L7 SERVICE HUB)
  * CLASIFICACIÓN: INFRASTRUCTURE LAYER (ESTRATO L4)
- * RESPONSABILIDAD: GESTIÓN DE CANALES REST Y GRAPHQL
+ * RESPONSABILIDAD: GESTIÓN DE CANALES REST, GRAPHQL Y SERVICIOS L7
  *
- * VISION HIPER-HOLÍSTICA:
- * Integra el método 'graphql' con unwrapping automático de 'data'.
- * Define y exporta 'neuralOracle' como la fachada especializada.
+ * VISION HIPER-HOLÍSTICA 2026:
+ * 1. L7 FAÇADE INTEGRATION: Expone interfaces nominales para Billing,
+ *    Herald y Nexus, eliminando peticiones 'get' genéricas en la UI.
+ * 2. ISOMORPHIC TOKEN RESOLUTION: Gestión segura de tokens en SSR y Client.
+ * 3. NEURAL ORACLE ENHANCEMENT: Motor GQL con unwrapping atómico de errores.
+ * 4. HYGIENE: Cero 'any', tipado absoluto y rastro forense vía Heimdall.
  * =================================================================
  */
 
@@ -18,25 +20,36 @@ import axios, {
   type AxiosResponse
 } from 'axios';
 import { createLogger } from '@prospector/heimdall-ts';
+import {
+  type BillingQuota,
+  type SystemNotification,
+  type OperatorRank,
+  type RealTimeEvent
+} from '@prospector/api-contracts';
 
-const logger = createLogger("API_Client");
+const logger = createLogger("L4:API_Client");
 
+/**
+ * Interface para el desempaquetado de señales del Oráculo GraphQL.
+ */
 interface GraphQLResponse<T> {
   data: T;
-  errors?: Array<{ message: string; locations?: unknown[]; path?: string[] }>;
+  errors?: Array<{ message: string; path?: string[] }>;
 }
 
+/**
+ * Cliente de red centralizado con capacidad de reintento y resiliencia.
+ */
 export class ResilientApiClient {
   private network_instance: AxiosInstance;
 
   /**
-   * @param target_layer 'tactical' (Rust/L3) o 'local' (Next.js/L4)
+   * @param target_layer - 'tactical' para el Orquestador Rust, 'local' para Next.js API.
    */
   constructor(target_layer: 'tactical' | 'local' = 'tactical') {
     const is_browser = typeof window !== 'undefined';
 
-    // CANAL TÁCTICO (RUST): Usa /api/v1 para activar el Proxy
-    // CANAL LOCAL (NEXT): Usa /api para golpear los Route Handlers directamente
+    // El canal táctico utiliza el prefijo /api/v1 para ser interceptado por el Proxy de Next.
     const base_path = target_layer === 'tactical' ? '/api/v1' : '/api';
 
     const gateway_base_url = is_browser
@@ -52,9 +65,14 @@ export class ResilientApiClient {
     this.configure_interceptors();
   }
 
+  /**
+   * Configura los centinelas de solicitud y respuesta para la inyección de seguridad.
+   */
   private configure_interceptors(): void {
     this.network_instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       const is_browser = typeof window !== 'undefined';
+
+      // Recuperación de la llave maestra desde el estrato correspondiente
       const session_token = is_browser
         ? sessionStorage.getItem('ADMIN_SESSION_TOKEN')
         : process.env.WORKER_AUTH_TOKEN;
@@ -68,11 +86,12 @@ export class ResilientApiClient {
     this.network_instance.interceptors.response.use(
       (response: AxiosResponse) => response,
       (network_error) => {
-        const url = network_error.config?.url;
-        const status = network_error.response?.status || "TIMEOUT";
-        // Silenciar logs para errores controlados (ej. sondas de diagnóstico)
+        const status = network_error.response?.status;
+        const endpoint = network_error.config?.url;
+
+        // Fail-Silent: No logueamos sondas de diagnóstico 404 (Expected behavior)
         if (status !== 404) {
-             logger.error(`UPLINK_FAULT: ${url} [${status}]`);
+          logger.error(`UPLINK_FAULT: [${status || 'TIMEOUT'}] in sector ${endpoint}`);
         }
         return Promise.reject(network_error);
       }
@@ -91,44 +110,51 @@ export class ResilientApiClient {
 
   /**
    * Ejecuta una consulta contra el Neural Data Gateway.
-   *
-   * # Logic:
-   * Envuelve la query en un payload JSON estándar.
-   * Desempaqueta 'data' y lanza error si 'errors' está presente.
+   * Provee validación de esquema en tiempo de ejecución.
    */
   public async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
     const payload = { query, variables };
-    // El endpoint es relativo a la base (/api/v1 + /graphql)
     const response = await this.post<GraphQLResponse<T>>('/graphql', payload);
 
     if (response.errors && response.errors.length > 0) {
-      const primary_error = response.errors[0].message;
-      logger.warn(`GRAPHQL_REJECTION: ${primary_error}`);
-      throw new Error(`NEURAL_QUERY_FAILED: ${primary_error}`);
+      const error_msg = response.errors[0].message;
+      logger.warn(`ORACLE_REJECTION: ${error_msg}`);
+      throw new Error(`NEURAL_QUERY_FAILED: ${error_msg}`);
     }
 
     return response.data;
   }
 }
 
-// INSTANCIA PRINCIPAL (Apunta al Orquestador Rust)
+// --- INSTANCIACIÓN DE CANALES SOBERANOS ---
+
+/** Instancia para comunicación directa con el Orquestador Rust. */
 export const apiClient = new ResilientApiClient('tactical');
 
-// INSTANCIA LOCAL (Apunta a Next.js Serverless Functions)
+/** Instancia para comunicación con los Route Handlers locales (L4). */
 export const nextApiClient = new ResilientApiClient('local');
 
-/**
- * FACHADA: NEURAL ORACLE
- * Interfaz especializada para consumo de datos complejos en el Dashboard.
- */
-export const neuralOracle = {
-  /**
-   * Envía una consulta al grafo de conocimiento.
-   * @param query String de consulta GQL.
-   * @param variables Variables opcionales.
-   */
-  query: async <T>(query: string, variables?: Record<string, unknown>): Promise<T> => {
-    return await apiClient.graphql<T>(query, variables);
-  }
+// --- FACHADAS DE ESTRATO L7 (USER SERVICES) ---
+
+/** Fachada especializada para la gobernanza financiera. */
+export const billingApi = {
+  getQuota: () => apiClient.get<BillingQuota>('/user/billing/quota'),
+  getHistory: () => apiClient.get<unknown[]>('/user/billing/history'),
 };
-// FIN DEL ARCHIVO [libs/infra/api-client-ts/src/lib/client.ts]
+
+/** Fachada para el sistema nervioso de comunicaciones Herald. */
+export const heraldApi = {
+  listNotifications: () => apiClient.get<SystemNotification[]>('/user/herald/notifications'),
+  markAsRead: (id: string) => apiClient.post('/user/herald/notifications/read', { notification_identifier: id }),
+};
+
+/** Fachada para el prestigio y la red social técnica Nexus. */
+export const nexusApi = {
+  getPrestige: () => apiClient.get<OperatorRank>('/user/nexus/prestige'),
+  getLeaderboard: () => apiClient.get<unknown[]>('/user/nexus/leaderboard'),
+};
+
+/** Interfaz unificada para consultas de conocimiento. */
+export const neuralOracle = {
+  query: <T>(query: string, vars?: Record<string, unknown>) => apiClient.graphql<T>(query, vars),
+};

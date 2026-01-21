@@ -1,7 +1,7 @@
 # [apps/orchestrator/Cargo.toml]
 [package]
 name = "prospector-orchestrator"
-version = "0.4.1"
+version = "0.4.2" # Incremento por saneamiento estructural
 edition = "2021"
 authors = ["Raz Podesta <metaShark Tech>"]
 description = "Centro de mando y control (C2) soberano: Orquestación bi-direccional, oráculo GraphQL y gestión de estados tácticos con servicios L7."
@@ -9,7 +9,6 @@ license = "MIT"
 
 [dependencies]
 # --- 1. SINAPSIS INTERNA SOBERANA (SSoT del Workspace) ---
-# Núcleo Matemático y Criptográfico
 prospector-core-math = { workspace = true }
 prospector-core-gen = { workspace = true }
 prospector-core-probabilistic = { workspace = true }
@@ -20,8 +19,7 @@ prospector-domain-models = { workspace = true }
 prospector-domain-strategy = { workspace = true }
 prospector-domain-forensics = { workspace = true }
 
-# ✅ NIVELACIÓN L7: Inyección de enlaces para servicios al usuario
-# Resuelve errores E0432 detectados en handlers/billing.rs y handlers/gamification.rs
+# Nivelación L7: Servicios al usuario
 prospector-domain-billing = { workspace = true }
 prospector-domain-gamification = { workspace = true }
 prospector-domain-notification = { workspace = true }
@@ -82,7 +80,7 @@ path = "src/bin/migrator.rs"
 # =================================================================
 # MATRIZ DE CERTIFICACIÓN INTEGRAL (PROTOCOL TRINITY)
 # =================================================================
-# Matriz expandida para incluir TODOS los aparatos de prueba del workspace.
+# Matriz optimizada: Eliminación de colisiones de targets de build.
 
 # --- ESTRATO TÁCTICO & HANDLERS ---
 
@@ -116,7 +114,7 @@ path = "../../tests/mirror/apps/orchestrator/handlers/governance_api.test.rs"
 
 [[test]]
 name = "api_tests_legacy"
-path = "../../tests/mirror/apps/orchestrator/src/api_tests.rs"
+path = "src/api_tests.rs"
 
 # --- ESTRATO DE SERVICIOS & RESILIENCIA ---
 
@@ -139,10 +137,6 @@ path = "../../tests/mirror/apps/orchestrator/services/c2_coordinator_test.rs"
 [[test]]
 name = "event_bus_zenith_test"
 path = "../../tests/mirror/apps/orchestrator/services/event_bus_zenith.test.rs"
-
-[[test]]
-name = "resurrection_safety_test"
-path = "../../tests/mirror/apps/orchestrator/services/resurrection_v180.test.rs"
 
 # --- ESTRATO DE ESTADO & NEURAL LINK ---
 
@@ -194,6 +188,7 @@ path = "../../tests/mirror/apps/orchestrator/lib_structure.test.rs"
 name = "route_dispatch_test"
 path = "../../tests/mirror/apps/orchestrator/route_dispatch.test.rs"
 
+# ✅ RESOLUCIÓN DE REGRESIÓN: Única definición para el test de resurrección
 [[test]]
 name = "resurrection_v180_test"
 path = "../../tests/mirror/apps/orchestrator/services/resurrection_v180.test.rs"

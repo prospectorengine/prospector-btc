@@ -1,22 +1,16 @@
 // [libs/infra/db-turso/src/repositories/archival.rs]
 /*!
  * =================================================================
- * APARATO: ARCHIVAL STRATA REPOSITORY (V200.10 - GOLD MASTER)
+ * APARATO: ARCHIVAL STRATA REPOSITORY (V200.12 - NOMINAL FIXED)
  * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
  * RESPONSABILIDAD: GESTIÓN ATÓMICA DEL BUFFER DE SINCRONIZACIÓN (OUTBOX)
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. CONTRACT PARITY: Mantiene 'fetch_pending_strategic_migration' como
- *    el túnel nominal para el servicio Chronos, sanando el error E0599.
- * 2. ATOMIC BATCHING: Refuerza el sellado de ráfagas mediante transacciones
- *    indivisibles, garantizando que el Ledger Táctico sea un espejo de Engine B.
- * 3. NOMINAL PURITY: Erradicación total de abreviaciones.
- * 4. ERROR TRIAGE: Implementa mapeo enriquecido para fallos de persistencia.
- *
- * # Mathematical Proof (Atomicity):
- * El uso de 'transaction()' asegura que el rastro de auditoría no sufra
- * de estados parciales: o toda la ráfaga es marcada como sincronizada,
- * o el buffer permanece intacto para reintento.
+ * 1. NOMINAL ALIGNMENT: Corrige el error de compilación sincronizando el
+ *    uso de MAXIMUM_SYNC_RETRY_THRESHOLD en la macro de consulta.
+ * 2. EXPLICIT TYPE BINDING: Eliminación de ambigüedades en el mapeo de filas.
+ * 3. BATCH IO OPTIMIZATION: Mantiene la estructura de ráfaga para el Relay.
+ * 4. HYGIENE: Cero abreviaciones y rastro forense #[instrument] de élite.
  * =================================================================
  */
 
@@ -24,7 +18,10 @@ use crate::errors::DbError;
 use crate::TursoClient;
 use libsql::params;
 use serde_json::{json, Value};
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, info, instrument, warn, error};
+
+/// Límite máximo de reintentos de sincronización antes de marcar como 'Stalled'.
+const MAXIMUM_SYNC_RETRY_THRESHOLD: i64 = 10;
 
 /// Repositorio de autoridad única para el drenaje y sellado de la tabla outbox_strategic.
 pub struct ArchivalRepository {
@@ -43,30 +40,38 @@ impl ArchivalRepository {
      * Recupera una ráfaga de eventos pendientes del Outbox Táctico.
      *
      * # Performance:
-     * Operación O(log N) mediante escaneo indexado por status y created_at.
+     * Operación O(log N). Pre-aloca memoria basada en el límite solicitado para
+     * minimizar ciclos de recolector de basura en el Orquestador.
      */
     #[instrument(skip(self))]
     pub async fn fetch_pending_outbox_batch(&self, batch_limit: i64) -> Result<Vec<Value>, DbError> {
         let database_connection = self.database_client.get_connection()?;
 
-        let query_statement = r#"
-            SELECT outbox_identifier, payload_json, target_stratum, retry_count
-            FROM outbox_strategic
-            WHERE status = 'pending' AND retry_count < 10
-            ORDER BY created_at ASC
-            LIMIT ?1
-        "#;
+        // ✅ REPARACIÓN NOMINAL: Sincronía bit-perfecta con MAXIMUM_SYNC_RETRY_THRESHOLD
+        let query_statement = format!(
+            "SELECT outbox_identifier, payload_json, target_stratum, retry_count
+             FROM outbox_strategic
+             WHERE status = 'pending' AND retry_count < {}
+             ORDER BY created_at ASC
+             LIMIT ?1",
+            MAXIMUM_SYNC_RETRY_THRESHOLD
+        );
 
-        let mut query_results = database_connection.query(query_statement, params![batch_limit]).await?;
-        let mut outbox_batch_collection = Vec::new();
+        let mut query_results = database_connection.query(&query_statement, params![batch_limit]).await?;
+        let mut outbox_batch_collection = Vec::with_capacity(batch_limit as usize);
 
         while let Some(data_row) = query_results.next().await? {
-            // Mapeo dinámico a Value para interoperabilidad polimórfica con Motor B (Supabase)
+            // SOBERANÍA DE TIPOS: Definición explícita de tipos para evitar E0282
+            let identifier: String = data_row.get(0)?;
+            let payload: String = data_row.get(1)?;
+            let stratum: String = data_row.get(2)?;
+            let retries: i64 = data_row.get(3)?;
+
             outbox_batch_collection.push(json!({
-                "outbox_identifier": data_row.get::<String>(0)?,
-                "payload_json": data_row.get::<String>(1)?,
-                "target_stratum": data_row.get::<String>(2)?,
-                "retry_count": data_row.get::<i64>(3)?
+                "outbox_identifier": identifier,
+                "payload_json": payload,
+                "target_stratum": stratum,
+                "retry_count": retries
             }));
         }
 
@@ -75,7 +80,7 @@ impl ArchivalRepository {
 
     /**
      * Alias nominal requerido por el aparato 'chronos_archive.rs' (L4).
-     * ✅ RESOLUCIÓN SOBERANA: Sella el error de método no encontrado.
+     * Mantiene la paridad galvánica con el servicio de archivo estratégico.
      */
     pub async fn fetch_pending_strategic_migration(&self, limit: i64) -> Result<Vec<Value>, DbError> {
         debug!("📤 [ARCHIVAL_REPO]: Serving migration batch request for Chronos Bridge.");
@@ -102,7 +107,7 @@ impl ArchivalRepository {
      * Sella una ráfaga completa de registros en una sola transacción atómica.
      *
      * # Performance:
-     * Reduce el overhead de handshakes con Turso en un factor de N:1.
+     * Utiliza el patrón de ejecución atómica para amortizar el coste de red.
      */
     #[instrument(skip(self, identifiers_collection))]
     pub async fn seal_archived_records(&self, identifiers_collection: Vec<String>) -> Result<(), DbError> {
@@ -118,7 +123,10 @@ impl ArchivalRepository {
             ).await?;
         }
 
-        atomic_transaction.commit().await.map_err(DbError::QueryError)?;
+        atomic_transaction.commit().await.map_err(|fault| {
+            error!("❌ [COMMIT_FAULT]: Failed to seal archival batch: {}", fault);
+            DbError::QueryError(fault)
+        })?;
 
         info!("✅ [ARCHIVAL_REPO]: Atomic batch seal successful.");
         Ok(())
