@@ -1,51 +1,99 @@
+# =================================================================
+# APARATO: MATHEMATIC TEST SWITCH (V1.3 - TYPE CORRECTED)
+# CLASIFICACIÓN: OPS INFRASTRUCTURE (ESTRATO L6)
+# RESPONSABILIDAD: CERTIFICACIÓN MANUAL DEL NÚCLEO MATEMÁTICO L1
+#
+# VISION HIPER-HOLÍSTICA 2026:
+# 1. TYPE INTEGRITY: Resuelve el error 'StringToken vs BooleanToken'
+#    nivelando el valor por defecto al estándar YAML booleano.
+# 2. RUNTIME REFINERY: Utiliza pnpm v4 para una sinapsis más rápida
+#    con el monorepo Nx.
+# 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta en inputs.
+# 4. HYGIENE: Cero redundancia en la adquisición de dependencias.
+# =================================================================
+
 name: "L1: Mathematic Test Switch"
 
 on:
   workflow_dispatch:
     inputs:
-      test_profile:
-        description: 'Perfil de compilación'
+      compilation_profile:
+        description: 'Perfil de Auditoría (Release recomendado para Criptografía)'
         required: true
         default: 'release'
         type: choice
         options:
           - debug
           - release
+      verbose_output:
+        description: 'Activar verbosidad forense (--nocapture)'
+        required: true
+        # ✅ REPARACIÓN: Se remueven comillas para satisfacer el tipo 'boolean'
+        default: true
+        type: boolean
 
 jobs:
   certification:
-    name: "Sovereign Math Audit"
+    name: "L1_Math_Audit"
     runs-on: ubuntu-latest
 
+    # Protección de recursos ante bucles de tortura infinitos
+    timeout-minutes: 30
+
     steps:
-      - name: "🛰️ DNA_ACQUISITION: Checkout Repository"
+      - name: "🛰️ DNA_ACQUISITION: Checkout Strata"
         uses: actions/checkout@v4
 
-      - name: "⚙️  ENV_STRATIFICATION: Install Rust Nightly"
+      - name: "⚙️  ENV_STRATIFICATION: Rust Nightly Engine"
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
 
-      - name: "📦 CACHE_SYNCHRONIZATION: Restore Cargo Strata"
+      - name: "📦 NODE_SINCRO: Provisioning pnpm v10"
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: "🧪 I18N_HYDRATION: Generating Dictionaries"
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm i18n:generate
+
+      - name: "💎 CACHE_HANDSHAKE: Restoring Cargo & Nx Strata"
         uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-math-engine-${{ hashFiles('**/Cargo.toml') }}
+            dist
+          key: ${{ runner.os }}-l1-math-gold-v1.3-${{ hashFiles('**/Cargo.toml', 'pnpm-lock.yaml') }}
 
-      - name: "🧪 EXECUTION: Firing 20 Proving Grounds Tests"
+      - name: "💥 EXECUTION: Firing 20 Proving Grounds Tests"
         env:
           ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
           WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          RUST_BACKTRACE: 1
         run: |
-          if [ "${{ github.event.inputs.test_profile }}" == "release" ]; then
-            cargo test --package prospector-core-math --release -- --nocapture
-          else
-            cargo test --package prospector-core-math -- --nocapture
+          # 1. Triaje de Perfil
+          PROFILE_FLAG=""
+          if [ "${{ github.event.inputs.compilation_profile }}" == "release" ]; then
+            PROFILE_FLAG="--release"
           fi
 
-      - name: "🏁 VERDICT: Final Integrity Report"
+          # 2. Triaje de Verbosidad
+          VERBOSE_FLAG=""
+          if [ "${{ github.event.inputs.verbose_output }}" == "true" ]; then
+            VERBOSE_FLAG="-- --nocapture"
+          fi
+
+          echo "🚀 Starting L1 Core Math Certification..."
+          echo "   Profile: ${{ github.event.inputs.compilation_profile }}"
+          echo "   Verbosidad: ${{ github.event.inputs.verbose_output }}"
+
+          cargo test --package prospector-core-math $PROFILE_FLAG $VERBOSE_FLAG
+
+      - name: "🏁 VERDICT: Final Strata Report"
         if: always()
-        run: echo "Mathematical certification sequence completed."
+        run: |
+          echo "Mathematical Integrity sequence finalized."

@@ -24,7 +24,6 @@ import {
   type BillingQuota,
   type SystemNotification,
   type OperatorRank,
-  type RealTimeEvent
 } from '@prospector/api-contracts';
 
 const logger = createLogger("L4:API_Client");

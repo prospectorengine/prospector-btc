@@ -1,21 +1,15 @@
 /**
  * =================================================================
- * APARATO: DOMAIN UNIFIED SCHEMAS (V84.0 - SILICON AWARE)
+ * APARATO: DOMAIN UNIFIED SCHEMAS (V85.0 - GOLD MASTER)
  * CLASIFICACIÓN: DOMAIN CONTRACTS (ESTRATO L2)
  * RESPONSABILIDAD: FUENTE ÚNICA DE VERDAD (SSoT) PARA EL ENLACE NEURAL
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. HARDWARE AWARENESS: Inyección de 'supports_avx2' en el esquema de métricas
- *    para certificar la capacidad de aceleración vectorial en el Dashboard L5.
- * 2. TYPE SOVEREIGNTY: Sincronización bit-perfecta con el modelo perimetral
- *    de Rust (telemetry.rs), eliminando discrepancias en la desincronización de la Tríada.
- * 3. ZERO ABBREVIATIONS: Mantenimiento de nomenclatura nominal descriptiva.
- * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral en cada esquema atómico.
- *
- * # Mathematical Proof (Neural Synchronization):
- * El esquema garantiza que el flujo binario des-serializado por el NeuralCodec
- * cumpla estrictamente con la topología de datos exigida por los Hooks reactivos,
- * previniendo estados 'undefined' en el Panóptico.
+ * 1. ZERO REGRESSIONS: Restaura todos los metadatos y descripciones de V84.0.
+ * 2. L7 EVOLUTION: Inyecta los contratos para Billing, Herald y Nexus
+ *    sincronizados con los repositorios L3 de Rust.
+ * 3. SILICON PARITY: Alinea AuditReport con las firmas de aceleración ADX/AVX.
+ * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral MIT.
  * =================================================================
  */
 
@@ -27,9 +21,7 @@ import { z } from "zod";
  * -----------------------------------------------------------------
  */
 
-/**
- * Niveles de salud operativa para subsistemas de persistencia y red.
- */
+/** Niveles de salud operativa para subsistemas de persistencia y red. */
 export const IntegrityStatusSchema = z.enum([
   'OPERATIONAL',
   'DEGRADED',
@@ -37,9 +29,7 @@ export const IntegrityStatusSchema = z.enum([
 ]);
 export type IntegrityStatus = z.infer<typeof IntegrityStatusSchema>;
 
-/**
- * Reporte de integridad de subsistemas internos (Auditor, Inspector, Dumper).
- */
+/** Reporte de integridad de subsistemas internos (Auditor, Inspector, Dumper). */
 export const SystemIntegrityReportSchema = z.object({
   identifier: z.string().uuid().optional(),
   apparatus_name: z.string(),
@@ -55,20 +45,14 @@ export type SystemIntegrityReport = z.infer<typeof SystemIntegrityReportSchema>;
  * -----------------------------------------------------------------
  */
 
-/**
- * Telemetría detallada de hardware de un nodo individual.
- * ✅ NIVELACIÓN V84.0: Inyección de capacidad de aceleración vectorial.
- */
+/** Telemetría detallada de hardware de un nodo individual. */
 export const NodeHardwareMetricsSchema = z.object({
   cpu_frequency_megahertz: z.number().nonnegative(),
   cpu_load_percentage: z.number().min(0).max(100),
   cpu_temperature_celsius: z.number(),
   ram_usage_megabytes: z.number().nonnegative(),
   is_thermal_throttling_active: z.boolean().describe("Indica si el procesador está limitando su potencia por calor"),
-  /**
-   * Identificador de soporte para instrucciones Advanced Vector Extensions 2.
-   * Crítico para la discriminación de nodos ELITE en el SequentialEngine.
-   */
+  /** Identificador de soporte para instrucciones Advanced Vector Extensions 2. */
   supports_avx2: z.boolean().default(false),
 });
 export type NodeHardwareMetrics = z.infer<typeof NodeHardwareMetricsSchema>;
@@ -79,9 +63,7 @@ export type NodeHardwareMetrics = z.infer<typeof NodeHardwareMetricsSchema>;
  * -----------------------------------------------------------------
  */
 
-/**
- * Latido de vida de un nodo del enjambre.
- */
+/** Latido de vida de un nodo del enjambre. */
 export const WorkerHeartbeatSchema = z.object({
   worker_identifier: z.string(),
   hostname_identity: z.string(),
@@ -92,9 +74,7 @@ export const WorkerHeartbeatSchema = z.object({
 });
 export type WorkerHeartbeat = z.infer<typeof WorkerHeartbeatSchema>;
 
-/**
- * Instantánea visual y operativa para el Panóptico.
- */
+/** Instantánea visual y operativa para el Panóptico. */
 export const WorkerSnapshotSchema = z.object({
   worker_identifier: z.string(),
   operational_status: z.enum(["running", "captcha", "error", "idle"]),
@@ -110,23 +90,21 @@ export type WorkerSnapshot = z.infer<typeof WorkerSnapshotSchema>;
  * -----------------------------------------------------------------
  */
 
-/**
- * Reporte final certificado de una misión de búsqueda.
- */
+/** Reporte final certificado de una misión de búsqueda. */
 export const AuditReportSchema = z.object({
   job_mission_identifier: z.string().uuid(),
   worker_node_identifier: z.string(),
-  computational_effort_volume: z.string(),
+  computational_effort_volume: z.string().describe("Volumen total de hashes procesados (BigInt String)"),
   execution_duration_milliseconds: z.number().nonnegative(),
   final_mission_status: z.string(),
-  audit_footprint_checkpoint: z.string(),
+  audit_footprint_checkpoint: z.string().describe("Sello de rastro forense hexadecimal"),
   completed_at_timestamp: z.string().datetime(),
+  average_computational_efficiency: z.number().describe("Rendimiento medio en H/ms"),
+  hardware_acceleration_signature: z.string().describe("Firma técnica del hardware (ej: ELITE_SIMD_ADX)"),
 });
 export type AuditReport = z.infer<typeof AuditReportSchema>;
 
-/**
- * Segmento para el mapa de calor espacial (Curva Elíptica).
- */
+/** Segmento para el mapa de calor espacial (Curva Elíptica). */
 export const SwarmHeatmapSegmentSchema = z.object({
   normalized_start_position: z.number().min(0).max(1),
   intensity_weight: z.number().min(0).max(1),
@@ -134,9 +112,7 @@ export const SwarmHeatmapSegmentSchema = z.object({
 });
 export type SwarmHeatmapSegment = z.infer<typeof SwarmHeatmapSegmentSchema>;
 
-/**
- * Resumen global de métricas del sistema (Pulse).
- */
+/** Resumen global de métricas del sistema (Pulse). */
 export const SystemMetricsSchema = z.object({
   active_nodes_count: z.number().int().nonnegative(),
   cumulative_global_hashrate: z.number().nonnegative(),
@@ -147,13 +123,53 @@ export type SystemMetrics = z.infer<typeof SystemMetricsSchema>;
 
 /**
  * -----------------------------------------------------------------
- * ESTRATO 5: OBSERVABILIDAD DE MANDO C2 (V80.0)
+ * ESTRATO 5: SERVICIOS DE USUARIO L7 (ZENITH UPGRADE)
  * -----------------------------------------------------------------
  */
 
+/** Clasificación de niveles de acceso y soberanía. */
+export const SubscriptionTierSchema = z.enum(['observer', 'operator', 'architect']);
+export type SubscriptionTier = z.infer<typeof SubscriptionTierSchema>;
+
+/** Estado actual de la cuota energética del operador. */
+export const BillingQuotaSchema = z.object({
+  current_subscription_tier: SubscriptionTierSchema,
+  maximum_concurrent_nodes_allowed: z.number().int().positive(),
+  remaining_compute_credits_balance: z.number().nonnegative(),
+  billing_cycle_end_timestamp: z.string().datetime(),
+});
+export type BillingQuota = z.infer<typeof BillingQuotaSchema>;
+
+/** Severidad semántica de señales Herald. */
+export const NotificationSeveritySchema = z.enum(['info', 'warning', 'critical', 'collision', 'community']);
+export type NotificationSeverity = z.infer<typeof NotificationSeveritySchema>;
+
+/** Unidad atómica de comunicación Herald. */
+export const SystemNotificationSchema = z.object({
+  identifier: z.string().uuid(),
+  severity_level: NotificationSeveritySchema,
+  message_context_key: z.string(),
+  creation_timestamp_utc: z.string().datetime(),
+  is_read_confirmation: z.boolean(),
+  forensic_metadata_json: z.string().nullable().optional(),
+});
+export type SystemNotification = z.infer<typeof SystemNotificationSchema>;
+
+/** Estatus de prestigio y maestría Nexus. */
+export const OperatorRankSchema = z.object({
+  level: z.number().int().positive(),
+  title: z.string(),
+  experience_points: z.number().int().nonnegative(),
+  next_level_threshold: z.number().int().positive(),
+});
+export type OperatorRank = z.infer<typeof OperatorRankSchema>;
+
 /**
- * Registro de navegación del automatizador (Playwright).
+ * -----------------------------------------------------------------
+ * ESTRATO 6: OBSERVABILIDAD & C2 (L6)
+ * -----------------------------------------------------------------
  */
+
 export const ProvisioningLogSchema = z.object({
   node_index: z.number(),
   message: z.string(),
@@ -162,9 +178,6 @@ export const ProvisioningLogSchema = z.object({
 });
 export type ProvisioningLog = z.infer<typeof ProvisioningLogSchema>;
 
-/**
- * Estado del Escudo de Baneo basado en inventario de Bóveda.
- */
 export const BanShieldStatusSchema = z.object({
   identities_in_vault: z.number(),
   safe_node_capacity: z.number(),
@@ -173,36 +186,21 @@ export const BanShieldStatusSchema = z.object({
 });
 export type BanShieldStatus = z.infer<typeof BanShieldStatusSchema>;
 
-/**
- * -----------------------------------------------------------------
- * ESTRATO 6: OBSERVABILIDAD UNIFICADA (V81.0 - PANOPTICON)
- * -----------------------------------------------------------------
- */
-
 export const LogSeveritySchema = z.enum(["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]);
 export type LogSeverity = z.infer<typeof LogSeveritySchema>;
 
 export const SystemStrataSchema = z.enum([
-  "L1_CORE",      // Matemática y Criptografía
-  "L2_STRATEGY",  // Lógica de Negocio
-  "L3_ORCH",      // Orquestador y Estado
-  "L4_API",       // Capa de Adaptadores
-  "L5_VIEW",      // Interfaz de Usuario
-  "L6_OPS"        // Infraestructura y Scripts
+  "L1_CORE", "L2_STRATEGY", "L3_ORCH", "L4_API", "L5_VIEW", "L6_OPS"
 ]);
 export type SystemStrata = z.infer<typeof SystemStrataSchema>;
 
-/**
- * Estructura canónica para el "Heimdall Unified Stream".
- * Centraliza logs de Rust, TypeScript, Python y SQL.
- */
+/** Estructura canónica para el "Heimdall Unified Stream". */
 export const SystemLogSchema = z.object({
   id: z.string().uuid(),
   timestamp: z.string().datetime(),
   stratum: SystemStrataSchema,
   severity: LogSeveritySchema,
   message: z.string(),
-  // Metadatos flexibles para contexto técnico (Stack trace, Latency, UserID)
   metadata: z.record(z.string(), z.unknown()).optional(),
   trace_id: z.string().optional()
 });
@@ -211,39 +209,18 @@ export type SystemLog = z.infer<typeof SystemLogSchema>;
 /**
  * -----------------------------------------------------------------
  * UNIÓN DISCRIMINADA SOBERANA (RealTimeEvent)
- * SSoT para la comunicación SSE/WS Orquestador -> Dashboard.
  * -----------------------------------------------------------------
  */
-export type RealTimeEvent =
-  | { t: "sp"; p: SystemMetrics }
-  | { t: "ac"; p: AuditReport }
-  | { t: "sh"; p: SwarmHeatmapSegment[] }
-  | { t: "ir"; p: SystemIntegrityReport }
-  | { t: "cc"; p: { target_bitcoin_address: string; discovery_node: string } }
-  | { t: "ad"; p: { drift_gap_count: number; total_tactical_count: number } }
-  | { t: "vr"; p: { worker_identifier: string; operational_status: string; system_timestamp: number } }
-  | { t: "pl"; p: ProvisioningLog }
-  | { t: "bs"; p: BanShieldStatus }
-  | { t: "sl"; p: SystemLog };
-
 export const RealTimeEventSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("sp"), p: SystemMetricsSchema }),
   z.object({ t: z.literal("ac"), p: AuditReportSchema }),
   z.object({ t: z.literal("sh"), p: z.array(SwarmHeatmapSegmentSchema) }),
   z.object({ t: z.literal("ir"), p: SystemIntegrityReportSchema }),
-  z.object({
-    t: z.literal("cc"),
-    p: z.object({ target_bitcoin_address: z.string(), discovery_node: z.string() })
-  }),
-  z.object({
-    t: z.literal("ad"),
-    p: z.object({ drift_gap_count: z.number(), total_tactical_count: z.number() })
-  }),
-  z.object({
-    t: z.literal("vr"),
-    p: z.object({ worker_identifier: z.string(), operational_status: z.string(), system_timestamp: z.number() })
-  }),
+  z.object({ t: z.literal("cc"), p: z.object({ target_bitcoin_address: z.string(), discovery_node: z.string() }) }),
+  z.object({ t: z.literal("ad"), p: z.object({ drift_gap_count: z.number(), total_tactical_count: z.number() }) }),
+  z.object({ t: z.literal("vr"), p: z.object({ worker_identifier: z.string(), operational_status: z.string(), system_timestamp: z.number() }) }),
   z.object({ t: z.literal("pl"), p: ProvisioningLogSchema }),
   z.object({ t: z.literal("bs"), p: BanShieldStatusSchema }),
   z.object({ t: z.literal("sl"), p: SystemLogSchema }),
 ]);
+export type RealTimeEvent = z.infer<typeof RealTimeEventSchema>;

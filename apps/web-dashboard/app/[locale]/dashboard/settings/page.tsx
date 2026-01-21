@@ -1,16 +1,15 @@
 /**
  * =================================================================
- * APARATO: HOT STRATEGY COMMAND CONSOLE (V3.2 - TYPE SOBERANEITY)
+ * APARATO: HOT STRATEGY COMMAND CONSOLE (V3.3 - TYPE SAFE GOLD)
  * CLASIFICACIÓN: FEATURE VIEW (ESTRATO L5)
  * RESPONSABILIDAD: MANDO EN CALIENTE, AJUSTES DE KERNEL Y C2
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. UNION GUARD: Implementa guardas de tipo para 'CommandDirective',
- *    resolviendo el error TS2339 de acceso a payload.
- * 2. SYMBOL INTEGRITY: Re-inyección de 'Fingerprint' y eliminación de
- *    residuos 'Zap'/'ChevronRight' (TS6133).
- * 3. NEURAL C2 LINK: Transmisión real hacia el CommandRouter de Rust.
- * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral.
+ * 1. ZERO ANY POLICY: Erradicación total de 'any' mediante discriminación
+ *    nativa de TypeScript, resolviendo los errores de ESLint 2339 y 2304.
+ * 2. SYMBOL INTEGRITY: Sello de paridad en iconografía y tipos nominales.
+ * 3. NEURAL C2 LINK: Transmisión real vía WebSocket hacia el CommandRouter.
+ * 4. HYGIENE: Eliminación de residuos 'Zap' y 'ChevronRight'.
  * =================================================================
  */
 
@@ -28,7 +27,7 @@ import {
   Binary,
   ShieldAlert,
   ShieldCheck,
-  Fingerprint, // ✅ REPARACIÓN TS2304: Icono inyectado
+  Fingerprint,
   Activity,
   type LucideIcon,
 } from "lucide-react";
@@ -53,8 +52,9 @@ export default function SettingsPage(): React.ReactElement {
    * DESPACHADOR TÁCTICO SOBERANO
    * Ejecuta la comunicación asíncrona con el Orquestador L3.
    *
-   * # Logic:
-   * Implementa una guarda de propiedad para manejar la unión discriminada de comandos.
+   * # Physics:
+   * Utiliza discriminación de tipos nativa para extraer metadatos del payload
+   * sin recurrir a casting de tipo 'any', satisfaciendo las reglas de ESLint.
    */
   const dispatch_tactical_directive = useCallback(async (directive: CommandDirective) => {
     if (!is_neural_link_connected) {
@@ -68,12 +68,15 @@ export default function SettingsPage(): React.ReactElement {
     set_active_processing_action(directive.action);
 
     try {
-      // ✅ RESOLUCIÓN TS2339: Extracción segura de la razón solo si el payload existe
-      const transition_reason = ('payload' in directive && 'reason' in (directive.payload as any))
-        ? (directive.payload as any).reason
-        : "MANUAL_OPERATOR_COMMAND";
+      // ✅ RESOLUCIÓN E0007 (ESLint): Eliminación de 'any'.
+      // TypeScript deduce el tipo tras el chequeo de la acción.
+      let transition_reason = "MANUAL_OPERATOR_COMMAND";
 
-      // TRANSMISIÓN TÁCTICA
+      if (directive.action === "HaltSwarm") {
+          transition_reason = directive.payload.reason;
+      }
+
+      // TRANSMISIÓN TÁCTICA AL MOTOR L3
       await apiClient.post("/admin/system/mode", {
         targetMode: directive.action === "HaltSwarm" ? "Maintenance" : "FullExecution",
         reason: transition_reason
@@ -201,7 +204,7 @@ export default function SettingsPage(): React.ReactElement {
                   id="Forensic"
                   title="Forensic_Satoshi"
                   desc="XP-Entropy reconstruction."
-                  icon={Fingerprint} // ✅ Uso del icono importado
+                  icon={Fingerprint}
                   onDispatch={() => dispatch_tactical_directive({
                     action: "SetGlobalStrategy",
                     payload: { strategy: "Forensic" }
@@ -259,7 +262,7 @@ export default function SettingsPage(): React.ReactElement {
       </div>
 
       <footer className="flex flex-col items-center gap-6 opacity-20 pt-10 border-t border-white/5">
-         <p className="text-[9px] uppercase tracking-[1.5em] text-zinc-600 font-black italic">
+         <p className="text-[9px] uppercase tracking-[1.5em] text-zinc-600 font-black italic text-center">
            Prospector_BTC // Strategic_Overlays // 2026
          </p>
       </footer>
