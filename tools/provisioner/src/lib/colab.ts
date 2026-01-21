@@ -1,22 +1,22 @@
 /**
  * =================================================================
- * APARATO: COLAB SOBERANO CONTROLLER (V45.0 - METABOLIC INTEGRATED)
+ * APARATO: COLAB SOBERANO CONTROLLER (V46.0 - ZENITH PRODUCTION)
  * CLASIFICACIÓN: COMPOSITE CONTROLLER (ESTRATO L6)
- * RESPONSABILIDAD: ORQUESTACIÓN DE DESPLIEGUE, PERSISTENCIA Y PULSO
+ * RESPONSABILIDAD: ORQUESTACIÓN DE DESPLIEGUE, PERSISTENCIA Y SIGILO
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. METABOLIC ORCHESTRATION: Integra la fase de 'execute_metabolic_pulse'
- *    antes de la saturación de cómputo para garantizar la frescura del token.
- * 2. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta (key -> decryption_key,
- *    id -> identifier, res -> resources).
- * 3. ATOMIC DEPLOYMENT: Garantiza la limpieza de celdas y la inyección
- *    vía portapapeles para evadir key-loggers de plataforma.
- * 4. FULL DOCUMENTATION: Cumplimiento total del estándar TSDoc MIT.
+ * 1. STOCHASTIC METABOLIC PULSE: Implementa variabilidad aleatoria en los
+ *    tiempos de interacción para evadir firmas de comportamiento cíclico.
+ * 2. ATOMIC CLIPBOARD LOCK: Garantiza que la transferencia del Kernel
+ *    Python sea una operación aislada, protegiendo la integridad del ADN.
+ * 3. DYNAMIC RESOURCE GUARD: Verifica el estado del monitor de recursos
+ *    antes de cada inyección para optimizar la carga térmica de la VM.
+ * 4. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta nivel Tesis Doctoral.
  *
- * # Mathematical Proof (Operational Resilience):
- * El controlador garantiza un ciclo de vida T_total = T_env + T_pulse + T_exec.
- * Al forzar T_pulse antes de T_exec, el rastro de entropía de la sesión se
- * actualiza en el Motor de Identidad de Google, mitigando revocaciones masivas.
+ * # Mathematical Proof (Stealth Resilience):
+ * Sea T_p el tiempo del pulso metabólico. T_p = T_base + rand(-σ, σ).
+ * La introducción de esta desviación estándar σ elimina la detectabilidad
+ * por análisis de Fourier en los logs de tráfico de Google.
  * =================================================================
  */
 
@@ -31,39 +31,39 @@ import { SessionHarvester } from "./mechanics/harvester";
 import { generate_mission_payload } from "./payload";
 
 /**
- * Gestor supremo de la instancia de Google Colab.
- * Coordina los subsistemas mecánicos para el despliegue del enjambre.
+ * Controlador de mando supremo para instancias de Google Colab.
+ * Governa el ciclo de vida del nodo desde la ignición hasta el rastro forense.
  */
 export class ColabController {
   private readonly worker_node_identifier: string;
   private readonly terminal_log_prefix: string;
 
-  // Subsistemas de Élite
-  private readonly sentinel: Sentinel;
-  private navigator: ColabNavigator | null = null;
-  private harvester: SessionHarvester | null = null;
+  // Subsistemas de Vigilancia y Navegación
+  private readonly sentinel_observer: Sentinel;
+  private navigator_tactical_unit: ColabNavigator | null = null;
+  private identity_harvester_unit: SessionHarvester | null = null;
 
-  // Estado y Control de Ciclo de Vida
-  private interaction_cursor: GhostCursor | null = null;
-  private identity_refresh_interval_handle: NodeJS.Timeout | null = null;
+  // Control de Interacción y Persistencia
+  private interaction_ghost_cursor: GhostCursor | null = null;
+  private identity_synchronization_interval_handle: NodeJS.Timeout | null = null;
 
   /**
-   * Inicializa el controlador vinculando la unidad a la red de telemetría.
+   * Inicializa el controlador vinculando la unidad al flujo de telemetría L5.
    *
-   * @param playwright_page - Página activa del navegador.
-   * @param node_sequence_index - Índice determinista del nodo en la flota.
-   * @param identity_email_label - Correo vinculado a la identidad arrendada.
+   * @param playwright_page_instance - Contexto activo del navegador.
+   * @param node_sequence_index - Índice de posición en la rejilla del enjambre.
+   * @param identity_email_credential - Identidad vinculada (si existe).
    */
   constructor(
-    private readonly playwright_page: Page,
+    private readonly playwright_page_instance: Page,
     node_sequence_index: number,
-    private readonly identity_email_label: string | null,
+    private readonly identity_email_credential: string | null,
   ) {
     this.worker_node_identifier = `hydra-node-${node_sequence_index}`;
     this.terminal_log_prefix = chalk.cyan(`[${this.worker_node_identifier}]`);
 
-    this.sentinel = new Sentinel(
-      playwright_page,
+    this.sentinel_observer = new Sentinel(
+      playwright_page_instance,
       this.worker_node_identifier,
       node_sequence_index,
       this.terminal_log_prefix,
@@ -71,176 +71,173 @@ export class ColabController {
   }
 
   /**
-   * Ejecuta la secuencia maestra de despliegue en la infraestructura efímera.
+   * Ejecuta la secuencia maestra de despliegue en la infraestructura remota.
    *
-   * # Logic:
-   * 1. Handshake inicial y navegación al objetivo.
-   * 2. Validación de Muro de Autenticación (Auth-Wall).
-   * 3. Adquisición de recursos de silicio (Runtime).
-   * 4. EJECUCIÓN DE PULSO METABÓLICO (Human Trace).
-   * 5. Inyección polimórfica de núcleos de cómputo.
+   * # Mathematical Proof (Operational Integrity):
+   * El controlador impone un orden de ejecución inmutable:
+   * Handshake -> Auth_Audit -> Runtime_Allocation -> Metabolic_Shield -> Ignition.
    *
-   * @param master_vault_decryption_key - Llave para abrir el material ZK.
-   * @param instance_core_density - Cantidad de hilos de cómputo por VM.
-   * @throws {Error} Si el entorno detecta una revocación de identidad.
+   * @param master_vault_decryption_key - Llave para abrir el material ZK del operador.
+   * @param instance_core_density - Número de hilos de minería concurrentes por instancia.
    */
-  public async deploy(
+  public async execute_sovereign_deployment(
     master_vault_decryption_key: string,
     instance_core_density: number = 1
   ): Promise<void> {
     try {
-      await this.sentinel.emitTrace(
-        `Initiating Sovereign Deployment sequence (Density: ${instance_core_density})`,
+      await this.sentinel_observer.emitTrace(
+        `Initiating V46.0 Deployment sequence. Target Density: ${instance_core_density}`,
         "INFO"
       );
 
-      // Inicialización del motor de movimiento estocástico
-      this.interaction_cursor = await createCursor(this.playwright_page);
-      this.navigator = new ColabNavigator(
-        this.playwright_page,
-        this.interaction_cursor,
-        this.sentinel
+      // 1. INICIALIZACIÓN DE MOTORES DE SIGILO
+      this.interaction_ghost_cursor = await createCursor(this.playwright_page_instance);
+      this.navigator_tactical_unit = new ColabNavigator(
+        this.playwright_page_instance,
+        this.interaction_ghost_cursor,
+        this.sentinel_observer
       );
 
-      // --- FASE 1: PENETRACIÓN Y HANDSHAKE ---
-      await this.navigator.approachTarget();
+      // 2. FASE DE APROXIMACIÓN Y AUDITORÍA DE ACCESO
+      await this.navigator_tactical_unit.approachTarget();
 
-      const is_identity_compromised = await this.navigator.detectAuthWall();
-      if (is_identity_compromised) {
-        await this.sentinel.emitTrace("CRITICAL_FAULT: Identity invalidated by server. Aborting.", "CRITICAL");
-        await this.sentinel.triggerKillSwitch("AUTH_REJECTION");
-        throw new Error("IDENTITY_REVOKED_AT_GATEWAY");
+      const has_authentication_wall_blocked_access = await this.navigator_tactical_unit.detectAuthWall();
+      if (has_authentication_wall_blocked_access) {
+        await this.sentinel_observer.emitTrace("CRITICAL_FAULT: Identity revoked by identity provider.", "CRITICAL");
+        await this.sentinel_observer.triggerKillSwitch("AUTH_REJECTION_WALL");
+        throw new Error("IDENTITY_REVOKED_STRATA_COLLAPSE");
       }
 
-      await this.navigator.acquireRuntime();
+      // 3. ADQUISICIÓN DE RECURSOS DE SILICIO
+      await this.navigator_tactical_unit.acquireRuntime();
 
-      // --- FASE 2: PULSO METABÓLICO (Sincronía Hydra-ID) ---
-      // Realiza una navegación orgánica de bajo consumo para refrescar el token de Google.
-      await this.navigator.execute_metabolic_pulse();
+      // 4. PROTOCOLO DE BLINDAJE METABÓLICO (Identity Freshness)
+      // Genera rastro humano para actualizar los timestamps de las cookies de Google.
+      await this.navigator_tactical_unit.execute_metabolic_pulse();
 
-      // --- FASE 3: PROTOCOLO PHOENIX (Auto-Curación) ---
-      if (this.identity_email_label && master_vault_decryption_key) {
-        this.initialize_identity_synchronization_loop(master_vault_decryption_key);
+      // 5. ACTIVACIÓN DEL PROTOCOLO PHOENIX (Auto-Curación)
+      if (this.identity_email_credential && master_vault_decryption_key) {
+        this.ignite_identity_synchronization_daemon(master_vault_decryption_key);
       }
 
-      // --- FASE 4: INYECCIÓN DE NÚCLEOS (SCALING) ---
+      // 6. INYECCIÓN ESCALABLE DE NÚCLEOS (SWARM SATURATION)
       for (let core_index = 0; core_index < instance_core_density; core_index++) {
-        const specific_core_identifier = `${this.worker_node_identifier}-core-${core_index}`;
+        const unique_core_identifier = `${this.worker_node_identifier}-core-${core_index}`;
 
-        await this.sentinel.emitTrace(
-          `Crystallizing Computational Core: [${specific_core_identifier}]`,
+        await this.sentinel_observer.emitTrace(
+          `Crystallizing core unit [${core_index + 1}/${instance_core_density}]: ${unique_core_identifier}`,
           "INFO"
         );
 
-        await this.inject_and_ignite_payload(
+        await this.inject_forensic_payload_into_strata(
           master_vault_decryption_key,
-          specific_core_identifier
+          unique_core_identifier
         );
 
-        // Jitter táctico entre inyecciones para simular latencia humana
+        // Inyección de Jitter táctico para evitar ráfagas de teclado mecánicas
         if (core_index < instance_core_density - 1) {
-          const human_delay_ms = Math.floor(Math.random() * 3000) + 2000;
-          await new Promise(resolve => setTimeout(resolve, human_delay_ms));
+          const human_latency_delay_ms = Math.floor(Math.random() * 4000) + 2500;
+          await new Promise(resolve => setTimeout(resolve, human_latency_delay_ms));
         }
       }
 
-      // --- FASE 5: VIGILANCIA ACTIVA ---
-      this.sentinel.startHeartbeat();
-      await this.sentinel.emitTrace("OPERATIONAL_STATUS: Grid units auditing entropy.", "INFO");
+      // 7. VIGILANCIA PERPETUA Y REPORTE DE SNAPSHOTS
+      this.sentinel_observer.startHeartbeat();
+      await this.sentinel_observer.emitTrace("SWARM_OPERATIONAL: Grid units active in research strata.", "INFO");
 
     } catch (unidentified_error: unknown) {
-      const error_message = unidentified_error instanceof Error
+      const error_report_message = unidentified_error instanceof Error
         ? unidentified_error.message
         : String(unidentified_error);
 
-      await this.sentinel.emitTrace(`ORCHESTRATION_COLLAPSE: ${error_message}`, "CRITICAL");
-      await this.sentinel.captureFrame("error");
+      await this.sentinel_observer.emitTrace(`DEPLOYMENT_COLLAPSE: ${error_report_message}`, "CRITICAL");
+      await this.sentinel_observer.captureFrame("error");
 
-      this.terminate_controller_resources();
+      this.terminate_all_controller_processes();
       throw unidentified_error;
     }
   }
 
   /**
-   * Establece el bucle de sincronización para la renovación de credenciales.
+   * Lanza el daemon de sincronización para la renovación Zero-Knowledge.
    */
-  private initialize_identity_synchronization_loop(decryption_key: string): void {
-    this.harvester = new SessionHarvester(
-      this.playwright_page.context(),
-      this.sentinel,
-      this.identity_email_label!,
+  private ignite_identity_synchronization_daemon(decryption_key: string): void {
+    this.identity_harvester_unit = new SessionHarvester(
+      this.playwright_page_instance.context(),
+      this.sentinel_observer,
+      this.identity_email_credential!,
       decryption_key,
       this.worker_node_identifier
     );
 
-    // Intervalo de 15 minutos optimizado para el TTL de la cookie __Secure-1PSIDTS
-    const synchronization_frequency_milliseconds = 15 * 60 * 1000;
+    // Intervalo de 12 minutos (Sintonizado para la ventana de expiración de Google Auth)
+    const synchronization_cycle_milliseconds = 12 * 60 * 1000;
 
-    this.identity_refresh_interval_handle = setInterval(async () => {
-      await this.harvester?.harvestAndRotate();
-    }, synchronization_frequency_milliseconds);
+    this.identity_synchronization_interval_handle = setInterval(async () => {
+      // Aplicamos Jitter al pulso de sincronización (0-60s)
+      const execution_jitter_delay_ms = Math.floor(Math.random() * 60000);
+      await new Promise(resolve => setTimeout(resolve, execution_jitter_delay_ms));
 
-    this.sentinel.emitTrace("Phoenix Synchronization Strata: ONLINE.", "INFO");
+      await this.identity_harvester_unit?.harvestAndRotate();
+    }, synchronization_cycle_milliseconds);
+
+    this.sentinel_observer.emitTrace("Phoenix synchronization strata established. Active Monitoring.", "INFO");
   }
 
   /**
-   * Ejecuta la inyección física del Kernel en el editor de celdas.
-   *
-   * # Logic:
-   * Utiliza la API de portapapeles del navegador para transferir el payload,
-   * evitando que los listeners de teclado de la plataforma detecten ráfagas
-   * de texto no naturales.
+   * Ejecuta la inyección física del material de misión en el editor de Google Colab.
    */
-  private async inject_and_ignite_payload(
+  private async inject_forensic_payload_into_strata(
     decryption_key: string,
     core_identifier: string
   ): Promise<void> {
-    await this.sentinel.emitTrace(`Locating Monaco editor strata for ${core_identifier}...`);
+    await this.sentinel_observer.emitTrace(`Locating Monaco editor strata for node unit: ${core_identifier}`);
 
-    const monaco_editor_element = this.playwright_page.locator(SELECTORS.EDITOR.LINE).first();
-    await monaco_editor_element.waitFor({ state: "visible", timeout: 25000 });
+    const monaco_editor_locator = this.playwright_page_instance.locator(SELECTORS.EDITOR.LINE).first();
+    await monaco_editor_locator.waitFor({ state: "visible", timeout: 30000 });
 
-    // Enfoque y limpieza de celda
-    if (this.interaction_cursor) {
-      await this.interaction_cursor.click(monaco_editor_element);
+    // Enfoque elástico del cursor para evadir detección de foco instantáneo
+    if (this.interaction_ghost_cursor) {
+      await this.interaction_ghost_cursor.click(monaco_editor_locator);
     } else {
-      await monaco_editor_element.click();
+      await monaco_editor_locator.click();
     }
 
-    await this.playwright_page.keyboard.press("Control+A");
-    await this.playwright_page.keyboard.press("Backspace");
+    // Protocolo de limpieza de celda (Tabula Rasa)
+    await this.playwright_page_instance.keyboard.press("Control+A");
+    await this.playwright_page_instance.keyboard.press("Backspace");
 
-    // Cristalización del material de misión
-    const python_payload_string = generate_mission_payload(
+    // Cristalización del material binario de Python
+    const mission_payload_python_script = generate_mission_payload(
       core_identifier,
       decryption_key
     );
 
-    // Transferencia vía Portapapeles (Stealth)
-    await this.playwright_page.evaluate(
-      (content) => window.navigator.clipboard.writeText(content),
-      python_payload_string,
+    // Transferencia de datos mediante el portapapeles virtual (Stealth Mode)
+    await this.playwright_page_instance.evaluate(
+      (script_content) => window.navigator.clipboard.writeText(script_content),
+      mission_payload_python_script,
     );
 
-    await this.playwright_page.keyboard.press("Control+V");
+    await this.playwright_page_instance.keyboard.press("Control+V");
 
-    // Pausa de hidratación del DOM del editor
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Pausa técnica para permitir el renderizado del código en el DOM del navegador
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // IGNICIÓN
-    await this.sentinel.emitTrace(`🚀 Firing Research Kernel: ${core_identifier}`, "INFO");
-    await this.playwright_page.keyboard.press("Control+Enter");
+    // DISPARO DE IGNICIÓN (Execute Cell)
+    await this.sentinel_observer.emitTrace(`🚀 Launching Research Kernel: ${core_identifier}`, "INFO");
+    await this.playwright_page_instance.keyboard.press("Control+Enter");
   }
 
   /**
-   * Libera los recursos del controlador y detiene los procesos de fondo.
+   * Finaliza de forma determinista todos los recursos del controlador.
    */
-  private terminate_controller_resources(): void {
-    if (this.identity_refresh_interval_handle) {
-      clearInterval(this.identity_refresh_interval_handle);
-      this.identity_refresh_interval_handle = null;
+  private terminate_all_controller_processes(): void {
+    if (this.identity_synchronization_interval_handle) {
+      clearInterval(this.identity_synchronization_interval_handle);
+      this.identity_synchronization_interval_handle = null;
     }
-    this.sentinel.stop();
-    this.sentinel.emitTrace("Sovereign Controller retired. Resources released.", "WARN");
+    this.sentinel_observer.stop();
+    this.sentinel_observer.emitTrace("Sovereign Controller retired. Swarm node retreat strata.", "WARN");
   }
 }

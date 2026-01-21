@@ -1,15 +1,18 @@
 /**
  * =================================================================
- * APARATO: RESILIENT API CLIENT (V18.0 - L7 SERVICE HUB)
+ * APARATO: RESILIENT API CLIENT (V18.8 - PRODUCTION HARDENED)
  * CLASIFICACIÓN: INFRASTRUCTURE LAYER (ESTRATO L4)
  * RESPONSABILIDAD: GESTIÓN DE CANALES REST, GRAPHQL Y SERVICIOS L7
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. L7 FAÇADE INTEGRATION: Expone interfaces nominales para Billing,
- *    Herald y Nexus, eliminando peticiones 'get' genéricas en la UI.
- * 2. ISOMORPHIC TOKEN RESOLUTION: Gestión segura de tokens en SSR y Client.
- * 3. NEURAL ORACLE ENHANCEMENT: Motor GQL con unwrapping atómico de errores.
- * 4. HYGIENE: Cero 'any', tipado absoluto y rastro forense vía Heimdall.
+ * 1. COLD-START RESILIENCE: Implementa interceptores de reintento para
+ *    mitigar la hibernación de la nueva cuenta de Render.
+ * 2. DISTRIBUTED TRACING: Inyecta un 'X-Trace-Id' unívoco por ráfaga
+ *    para correlación bit-perfecta en el Motor C (MongoDB).
+ * 3. ISOMORPHIC AUTHORITY: Resolución de tokens unificada para SSR
+ *    (Vercel Edge) y CSR (Navegador).
+ * 4. ZERO REGRESSIONS: Mantiene paridad total con las fachadas L7
+ *    (Billing, Herald, Nexus) y el motor Neural Oracle.
  * =================================================================
  */
 
@@ -26,7 +29,7 @@ import {
   type OperatorRank,
 } from '@prospector/api-contracts';
 
-const logger = createLogger("L4:API_Client");
+const logger = createLogger("L4:Resilient_Uplink");
 
 /**
  * Interface para el desempaquetado de señales del Oráculo GraphQL.
@@ -37,7 +40,7 @@ interface GraphQLResponse<T> {
 }
 
 /**
- * Cliente de red centralizado con capacidad de reintento y resiliencia.
+ * Cliente de red centralizado con blindaje contra latencia de nube.
  */
 export class ResilientApiClient {
   private network_instance: AxiosInstance;
@@ -48,7 +51,7 @@ export class ResilientApiClient {
   constructor(target_layer: 'tactical' | 'local' = 'tactical') {
     const is_browser = typeof window !== 'undefined';
 
-    // El canal táctico utiliza el prefijo /api/v1 para ser interceptado por el Proxy de Next.
+    // El canal táctico utiliza el rewrite local /api/v1 para aprovechar el cache del borde
     const base_path = target_layer === 'tactical' ? '/api/v1' : '/api';
 
     const gateway_base_url = is_browser
@@ -57,21 +60,24 @@ export class ResilientApiClient {
 
     this.network_instance = axios.create({
       baseURL: gateway_base_url,
-      timeout: 25000,
-      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000, // Elevado a 30s para absorber el bootstrapping del orquestador
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Prospector-Layer': 'L4_INFRA'
+      },
     });
 
     this.configure_interceptors();
   }
 
   /**
-   * Configura los centinelas de solicitud y respuesta para la inyección de seguridad.
+   * Configura los centinelas de seguridad y observabilidad distribuida.
    */
   private configure_interceptors(): void {
     this.network_instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       const is_browser = typeof window !== 'undefined';
 
-      // Recuperación de la llave maestra desde el estrato correspondiente
+      // 1. INYECCIÓN DE IDENTIDAD SOBERANA
       const session_token = is_browser
         ? sessionStorage.getItem('ADMIN_SESSION_TOKEN')
         : process.env.WORKER_AUTH_TOKEN;
@@ -79,19 +85,34 @@ export class ResilientApiClient {
       if (session_token && config.headers) {
         config.headers.Authorization = `Bearer ${session_token}`;
       }
+
+      // 2. GENERACIÓN DE RASTRO FORENSE (Traceability)
+      if (config.headers) {
+        config.headers['X-Trace-Id'] = crypto.randomUUID();
+      }
+
       return config;
     });
 
     this.network_instance.interceptors.response.use(
       (response: AxiosResponse) => response,
-      (network_error) => {
-        const status = network_error.response?.status;
-        const endpoint = network_error.config?.url;
+      async (network_error) => {
+        const { config, response } = network_error;
+        const status = response?.status;
 
-        // Fail-Silent: No logueamos sondas de diagnóstico 404 (Expected behavior)
-        if (status !== 404) {
-          logger.error(`UPLINK_FAULT: [${status || 'TIMEOUT'}] in sector ${endpoint}`);
+        // PROTOCOLO DE REANIMACIÓN (Retry logic para Cold Starts)
+        // Reintentamos una vez si recibimos 503 (Service Unavailable) o Timeout
+        if ((status === 503 || network_error.code === 'ECONNABORTED') && !config._isRetry) {
+          config._isRetry = true;
+          logger.warn(`🚀 [REANIMATION]: Service hibernating. Attempting second pulse...`);
+          return this.network_instance(config);
         }
+
+        // Fail-Silent para diagnósticos 404, error real para el resto
+        if (status !== 404) {
+          logger.error(`UPLINK_FAULT: sector=[${config.url}] status=[${status || 'TIMEOUT'}]`);
+        }
+
         return Promise.reject(network_error);
       }
     );
@@ -108,17 +129,17 @@ export class ResilientApiClient {
   }
 
   /**
-   * Ejecuta una consulta contra el Neural Data Gateway.
-   * Provee validación de esquema en tiempo de ejecución.
+   * Ejecuta una consulta contra el Neural Data Gateway (GraphQL).
+   * Implementa desensamblado atómico de errores del oráculo.
    */
   public async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
     const payload = { query, variables };
     const response = await this.post<GraphQLResponse<T>>('/graphql', payload);
 
     if (response.errors && response.errors.length > 0) {
-      const error_msg = response.errors[0].message;
-      logger.warn(`ORACLE_REJECTION: ${error_msg}`);
-      throw new Error(`NEURAL_QUERY_FAILED: ${error_msg}`);
+      const error_artifact = response.errors[0];
+      logger.warn(`ORACLE_REJECTION: ${error_artifact.message}`, { path: error_artifact.path });
+      throw new Error(`NEURAL_QUERY_FAILED: ${error_artifact.message}`);
     }
 
     return response.data;
@@ -127,33 +148,33 @@ export class ResilientApiClient {
 
 // --- INSTANCIACIÓN DE CANALES SOBERANOS ---
 
-/** Instancia para comunicación directa con el Orquestador Rust. */
+/** Instancia principal conectada al Orquestador Rust. */
 export const apiClient = new ResilientApiClient('tactical');
 
-/** Instancia para comunicación con los Route Handlers locales (L4). */
+/** Instancia conectada a los Route Handlers de Next.js. */
 export const nextApiClient = new ResilientApiClient('local');
 
 // --- FACHADAS DE ESTRATO L7 (USER SERVICES) ---
 
-/** Fachada especializada para la gobernanza financiera. */
+/** Fachada para la gobernanza financiera y cuotas de silicio. */
 export const billingApi = {
   getQuota: () => apiClient.get<BillingQuota>('/user/billing/quota'),
   getHistory: () => apiClient.get<unknown[]>('/user/billing/history'),
 };
 
-/** Fachada para el sistema nervioso de comunicaciones Herald. */
+/** Fachada para el sistema nervioso Herald (Notificaciones). */
 export const heraldApi = {
   listNotifications: () => apiClient.get<SystemNotification[]>('/user/herald/notifications'),
   markAsRead: (id: string) => apiClient.post('/user/herald/notifications/read', { notification_identifier: id }),
 };
 
-/** Fachada para el prestigio y la red social técnica Nexus. */
+/** Fachada para el motor Nexus de prestigio y red social. */
 export const nexusApi = {
   getPrestige: () => apiClient.get<OperatorRank>('/user/nexus/prestige'),
   getLeaderboard: () => apiClient.get<unknown[]>('/user/nexus/leaderboard'),
 };
 
-/** Interfaz unificada para consultas de conocimiento. */
+/** Interfaz unificada para consultas de conocimiento y academia. */
 export const neuralOracle = {
   query: <T>(query: string, vars?: Record<string, unknown>) => apiClient.graphql<T>(query, vars),
 };

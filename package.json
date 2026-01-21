@@ -30,7 +30,7 @@
     "db:supabase:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/supabase/connection_pulse.ts",
     "db:turso:audit": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/omniscient-audit.ts",
 
-    "___L4_QUALITY_ASSURANCE___": "--- [ TRINITY AUDIT PROTOCOL ] ---",
+    "__L4_QUALITY_ASSURANCE__": "--- [ TRINITY AUDIT PROTOCOL ] ---",
     "audit:all": "pnpm audit:logic && pnpm audit:system",
     "audit:logic": "nx run-many -t lint test --all --parallel=1",
     "audit:system": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/validate-system.ts",
