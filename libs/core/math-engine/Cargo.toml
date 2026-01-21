@@ -7,15 +7,22 @@ authors = ["Raz Podesta <metaShark Tech>"]
 description = "Motor matemático de bajo nivel para secp256k1 con soporte de telemetría forense y ráfagas Jacobiana."
 
 [dependencies]
+# --- NÚCLEO CRIPTOGRÁFICO SOBERANO ---
 secp256k1 = { workspace = true }
 sha2 = { workspace = true }
 ripemd = "0.1"
 serde = { workspace = true }
 tracing = { workspace = true }
 
-[dependencies.prospector-core-math-derive]
-path = "derive"
-optional = true
+# ✅ REPARACIÓN CRÍTICA: Se ha eliminado la dependencia inexistente 'prospector-core-math-derive'
+# que causaba el fallo 'os error 2' en el runner de GitHub Actions.
+
+# --- UTILIDADES DE ALTO RENDIMIENTO (HEAP-FREE) ---
+thiserror = { workspace = true }
+hex = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
 
 [dev-dependencies]
 tracing-subscriber = { workspace = true }
@@ -32,7 +39,7 @@ name = "prospector_core_math"
 path = "src/lib.rs"
 
 # =================================================================
-# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V25.7 - PHYSICAL SYNC)
+# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V25.8 - RESIDUE FREE)
 # =================================================================
 
 [[test]]
