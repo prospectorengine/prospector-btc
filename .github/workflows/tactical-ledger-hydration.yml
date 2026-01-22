@@ -1,16 +1,10 @@
-# =================================================================
-# APARATO: TACTICAL LEDGER HYDRATION (V1.0 - SOBERANO)
-# CLASIFICACIÓN: OPS INFRASTRUCTURE (ESTRATO L6)
-# RESPONSABILIDAD: Hidratación Remota del Motor A (Turso)
-# =================================================================
-
 name: "💠 Hydra Genesis: Tactical Ledger Hydration"
 
 on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Justificación del Mando para la re-hidratación'
+        description: 'Mando Protocol'
         required: true
         default: 'MANUAL_GENESIS_IGNITION'
 
@@ -18,38 +12,39 @@ jobs:
   ignition:
     name: "Crystallizing Genesis Strata"
     runs-on: ubuntu-latest
+    # 🛡️ CRÍTICO: Especificamos el entorno donde usted creó los secretos/variables
+    environment: main
 
-    # Estratos de Seguridad: No permitimos ejecuciones concurrentes para evitar colisiones ACID
     concurrency:
       group: ledger-hydration
       cancel-in-progress: false
 
     steps:
-      - name: "🛰️ [1/5] Adquiring Source Code"
+      - name: "🛰️ [1/4] Adquiring Source Code"
         uses: actions/checkout@v4
 
-      - name: "🦀 [2/5] Initializing Rust Toolchain (Nightly)"
+      - name: "🦀 [2/4] Initializing Rust Toolchain"
         uses: dtolnay/rust-toolchain@nightly
 
-      - name: "📦 [3/5] Synchronizing Binary Cache"
+      - name: "📦 [3/4] Synchronizing Binary Cache"
         uses: Swatinem/rust-cache@v2
 
-      - name: "🧬 [4/5] Executing Atomic Seed Sequence"
+      - name: "🧬 [4/4] Executing Atomic Seed Sequence (Release Mode)"
         env:
+          # --- MAPEO DE SECRETOS (GB -> SISTEMA) ---
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          GITHUB_PAT: ${{ secrets.GB_PAT }}
+
+          # --- MAPEO DE VARIABLES (GB -> SISTEMA) ---
+          GITHUB_OWNER: ${{ vars.GB_OWNER }}
+          GITHUB_REPO: ${{ vars.GB_REPO }}
+          ORCHESTRATOR_URL: ${{ vars.ORCHESTRATOR_URL }}
+          FILTER_BASE_URL: ${{ vars.FILTER_BASE_URL }}
+          FILTER_SHARDS: ${{ vars.FILTER_SHARDS }}
+
           RUST_LOG: info
         run: |
-          echo "Initiating release build for Genesis Forge..."
+          echo "Building and firing Seeder with GB_Strata mapping..."
           cargo run --release --bin seed
-
-      - name: "🛡️ [5/5] Final Integrity Audit"
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: |
-          echo "Verifying system_state table crystallization..."
-          # Comprobación rápida vía SQL crudo para certificar el éxito del binario
-          curl -s -X POST "${{ secrets.DATABASE_URL }}/v1/execute" \
-            -H "Authorization: Bearer ${{ secrets.TURSO_AUTH_TOKEN }}" \
-            -d '{"statements": ["SELECT * FROM system_state WHERE key = '"'active_census_audit_token'"';"]}'
