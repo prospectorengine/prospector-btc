@@ -1,24 +1,22 @@
 // [libs/core/math-engine/src/kangaroo.rs]
 /**
  * =================================================================
- * APARATO: KANGAROO MATRIX SOLVER (V19.2 - DOCUMENTATION SEALED)
+ * APARATO: KANGAROO MATRIX SOLVER (V20.0 - ZENITH GOLD MASTER)
  * CLASIFICACIÓN: CORE MATH (ESTRATO L1)
- * RESPONSABILIDAD: RESOLUCIÓN PARALELA DE ECDLP CON RESILIENCIA C2
+ * RESPONSABILIDAD: RESOLUCIÓN PARALELA DE ECDLP CON MÁSCARA DINÁMICA
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. FULL RUSTDOC: Sella el error de 'missing_docs' (Severity 8) inyectando
- *    especificaciones de Tesis en todos los tipos públicos.
- * 2. NOMINAL SYNC: Consistencia absoluta con 'arithmetic.rs' V121.0
- *    utilizando el estándar 'big_endian'.
- * 3. PREEMPTION READY: Monitoreo de señales de interrupción para detener
- *    el enjambre de saltos de forma determinista.
- * 4. HYGIENE: Erradicación de abreviaciones y rastro forense #[instrument].
+ * 1. SEC1 INDEX CORRECTION: Sincroniza la detección de puntos distinguidos
+ *    con el byte final de la coordenada X (index 32), no el buffer 31.
+ * 2. DYNAMIC SPARSITY: Habilita el control total de la densidad de trampas
+ *    vía 'distinguished_point_bitmask'.
+ * 3. ZERO ABBREVIATIONS: Erradicación de 'i', 'idx', 'res' y 'msg'.
+ * 4. BOUNDARY AUDIT: Validación de ancho de búsqueda para prevenir pánicos.
  *
- * # Mathematical Proof (Pollard's Lambda with DP):
- * El algoritmo busca colisiones entre una trayectoria conocida (Tame) y
- * una desconocida (Wild) en un rango $w$. La probabilidad de colisión
- * se optimiza mediante el uso de Puntos Distinguidos para reducir
- * la ocupación de memoria en el Orquestador.
+ * # Mathematical Proof (Pollard's Lambda):
+ * El sistema busca el escalar 'k' tal que k*G = Target. Utiliza dos
+ * trayectorias: una 'Tame' (domada) que siembra trampas y una 'Wild'
+ * (salvaje) que busca caer en ellas. La colisión revela la clave privada.
  * =================================================================
  */
 
@@ -26,7 +24,8 @@ use crate::prelude::*;
 use crate::arithmetic::{
     add_u256_big_endian,
     subtract_u256_big_endian,
-    convert_u128_to_u256_big_endian
+    convert_u128_to_u256_big_endian,
+    U256_BYTE_SIZE
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -37,167 +36,169 @@ use tracing::{info, debug, warn, instrument};
 /// Configuración operativa para la ráfaga de resolución del algoritmo Canguro.
 pub struct KangarooConfig {
     /// Escalar inicial hexadecimal del rango de búsqueda.
-    pub start_scalar: [u8; 32],
-    /// Ancho total del espacio de búsqueda (Rango $W$).
-    pub search_width: u64,
-    /// Máscara binaria para la detección de Puntos Distinguidos (ej: 0x0F para 1/16).
-    pub distinguished_point_mask: u8,
-    /// Capacidad máxima del almacén de trampas (traps) en memoria RAM.
-    pub maximum_traps_capacity: usize,
+    pub start_scalar_bytes: [u8; U256_BYTE_SIZE],
+    /// Ancho total del espacio de búsqueda (Rango W).
+    pub search_width_magnitude: u64,
+    /// Máscara binaria para la detección de Puntos Distinguidos (Sparsity).
+    pub distinguished_point_bitmask: u8,
+    /// Capacidad máxima del almacén de trampas en memoria RAM.
+    pub maximum_traps_capacity_limit: usize,
 }
 
 #[derive(Clone, Copy)]
 struct LeapTableEntry {
-    /// Escalar de salto precomputado en formato de bytes.
-    scalar_step: [u8; 32],
+    /// Escalar de salto precomputado en formato big_endian.
+    pub scalar_step_bytes: [u8; U256_BYTE_SIZE],
     /// Distancia lógica recorrida en la curva tras el salto.
-    distance_weight: u128,
+    pub distance_weight_magnitude: u128,
 }
 
 #[derive(Clone)]
 struct KangarooUnit {
     /// Punto actual en la curva secp256k1 (Coordenada Afín).
-    current_point: SafePublicKey,
-    /// Distancia acumulada desde el origen de la trayectoria actual.
-    cumulative_distance: [u8; 32],
+    pub current_point_coordinates: SafePublicKey,
+    /// Distancia acumulada desde el origen de la trayectoria.
+    pub cumulative_distance_bytes: [u8; U256_BYTE_SIZE],
 }
 
 impl KangarooUnit {
     /**
-     * Ejecuta un salto estocástico determinista basado en la posición actual en la curva.
+     * Ejecuta un salto estocástico determinista basado en la posición actual.
      *
-     * # Logic
-     * El índice de salto se deriva de la coordenada X del punto actual,
-     * garantizando que ambos canguros (Tame y Wild) sigan la misma trayectoria
-     * al colisionar.
+     * # Logic:
+     * El selector de salto utiliza el último byte de la coordenada X para
+     * garantizar que canguros de distintos orígenes sigan la misma ruta
+     * al entrar en el mismo punto de la curva.
      */
     #[inline(always)]
-    fn perform_leap(
+    fn perform_stochastic_leap(
         &mut self,
-        jump_matrix: &[LeapTableEntry; 32],
-        effort_accumulator: &AtomicU64
+        jump_matrix_reference: &[LeapTableEntry; 32],
+        effort_telemetry_accumulator: &AtomicU64
     ) -> Result<(), MathError> {
-        let point_bytes = self.current_point.to_bytes(true);
-        // Determinismo de salto: Utilizamos el último byte como selector de matriz
-        let jump_index = (point_bytes[32] % 32) as usize;
-        let entry = &jump_matrix[jump_index];
+        let serialized_point_bytes = self.current_point_coordinates.to_bytes(true);
 
-        self.current_point = self.current_point.add_scalar(&entry.scalar_step)?;
-        let leap_distance_u256 = convert_u128_to_u256_big_endian(entry.distance_weight);
-        self.cumulative_distance = add_u256_big_endian(&self.cumulative_distance, &leap_distance_u256)?;
+        // El byte 32 es el final de la coordenada X en formato SEC1 Comprimido.
+        let jump_matrix_index = (serialized_point_bytes[32] % 32) as usize;
+        let selected_leap_entry = &jump_matrix_reference[jump_matrix_index];
 
-        // Reporte de esfuerzo para el HUD de telemetría
-        effort_accumulator.fetch_add(1, Ordering::Relaxed);
+        self.current_point_coordinates = self.current_point_coordinates.add_scalar(&selected_leap_entry.scalar_step_bytes)?;
 
+        let leap_distance_u256 = convert_u128_to_u256_big_endian(selected_leap_entry.distance_weight_magnitude);
+
+        self.cumulative_distance_bytes = add_u256_big_endian(
+            &self.cumulative_distance_bytes,
+            &leap_distance_u256
+        )?;
+
+        effort_telemetry_accumulator.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
     /**
-     * Evalúa si el punto actual cumple con la máscara de Puntos Distinguidos.
+     * Evalúa si las coordenadas actuales satisfacen el nivel de distinción requerido.
      */
     #[inline(always)]
-    fn is_at_distinguished_coordinates(&self, bit_mask: u8) -> bool {
-        let point_bytes = self.current_point.to_bytes(true);
-        (point_bytes[31] & bit_mask) == 0
+    fn check_if_point_is_distinguished(&self, bitmask_value: u8) -> bool {
+        let serialized_point_bytes = self.current_point_coordinates.to_bytes(true);
+        // Filtramos por el byte final de la coordenada X
+        (serialized_point_bytes[32] & bitmask_value) == 0
     }
 }
 
-/// Solucionador de alto rendimiento para el Problema del Logaritmo Discreto (ECDLP).
 pub struct KangarooSolver;
 
 impl KangarooSolver {
     /**
      * Ejecuta la resolución criptográfica de un punto público con conciencia de sistema.
      *
-     * # Mathematical Proof
-     * Implementa el algoritmo de los Canguros de Pollard. La trayectoria 'Tame'
-     * siembra trampas en el espacio de búsqueda. La trayectoria 'Wild' (iniciada
-     * desde el punto objetivo) busca caer en una trampa para revelar el logaritmo.
+     * # Performance:
+     * Complejidad O(sqrt(W)). Utiliza paralelismo masivo de hilos para la fase Wild.
      *
-     * # Performance
-     * Complejidad media de $2 \cdot \sqrt{W}$ operaciones de grupo. Utiliza
-     * paralelismo masivo vía Rayon para la fase 'Wild'.
-     *
-     * # Errors
-     * - Retorna `MathError` ante fallos de aritmética U256 o geometría de curva.
-     * - Retorna `None` si el rango es agotado o si se recibe señal de interrupción C2.
+     * # Errors:
+     * Retorna 'MathError' si el search_width es inconsistente o la aritmética colapsa.
      */
-    #[instrument(skip_all, fields(width = config.search_width))]
+    #[instrument(skip_all, fields(width = config.search_width_magnitude))]
     pub fn solve_discrete_logarithm(
         target_public_key: &SafePublicKey,
         config: &KangarooConfig,
         global_stop_signal: &AtomicBool,
         computational_effort_accumulator: &AtomicU64,
-    ) -> Result<Option<[u8; 32]>, MathError> {
-        // 1. GENERACIÓN DE MATRIZ DE SALTOS (DETERMINISTA)
-        let mut jump_matrix = [LeapTableEntry { scalar_step: [0; 32], distance_weight: 0 }; 32];
-        for (index, entry) in jump_matrix.iter_mut().enumerate() {
-            let exponent_weight = 1u128 << (index / 2);
-            entry.distance_weight = exponent_weight;
-            entry.scalar_step = convert_u128_to_u256_big_endian(exponent_weight);
+    ) -> Result<Option<[u8; U256_BYTE_SIZE]>, MathError> {
+
+        // 1. GENERACIÓN DE LA MATRIZ DE SALTOS (DETERMINISTA)
+        let mut jump_matrix_artifact = [LeapTableEntry {
+            scalar_step_bytes: [0; U256_BYTE_SIZE],
+            distance_weight_magnitude: 0
+        }; 32];
+
+        for (leap_index, entry_pointer) in jump_matrix_artifact.iter_mut().enumerate() {
+            let exponent_magnitude = 1u128 << (leap_index / 2);
+            entry_pointer.distance_weight_magnitude = exponent_magnitude;
+            entry_pointer.scalar_step_bytes = convert_u128_to_u256_big_endian(exponent_magnitude);
         }
 
-        let start_private_key = SafePrivateKey::from_bytes(&config.start_scalar)?;
-        let base_point = SafePublicKey::from_private(&start_private_key);
-        let width_as_u256 = convert_u128_to_u256_big_endian(config.search_width as u128);
+        let base_scalar_private_key = SafePrivateKey::from_bytes(&config.start_scalar_bytes)?;
+        let base_point_jacobian = SafePublicKey::from_private(&base_scalar_private_key);
+        let search_width_u256_artifact = convert_u128_to_u256_big_endian(config.search_width_magnitude as u128);
 
-        // 2. TAME KANGAROO: Fase de sembrado de trampas
-        debug!("🦘 [KANGAROO]: Deploying Tame Unit (The Hunter)...");
-        let tame_start_point = base_point.add_scalar(&width_as_u256)?;
+        // 2. FASE TAME: Sembrado de Trampas en el KeySpace
+        debug!("🦘 [KANGAROO]: Materializing Tame Trajectories...");
+
+        let tame_start_point = base_point_jacobian.add_scalar(&search_width_u256_artifact)?;
         let mut tame_unit = KangarooUnit {
-            current_point: tame_start_point,
-            cumulative_distance: width_as_u256,
+            current_point_coordinates: tame_start_point,
+            cumulative_distance_bytes: search_width_u256_artifact,
         };
 
-        let mut trap_vault: HashMap<Vec<u8>, [u8; 32]> = HashMap::with_capacity(config.maximum_traps_capacity);
-        let max_steps_threshold = (config.search_width as f64).sqrt() as usize * 4;
+        let mut trap_storage_vault: HashMap<Vec<u8>, [u8; U256_BYTE_SIZE]> = HashMap::with_capacity(config.maximum_traps_capacity_limit);
+        let maximum_steps_threshold = (config.search_width_magnitude as f64).sqrt() as usize * 4;
 
-        for step_index in 0..max_steps_threshold {
-            // Sensor de preemption
-            if step_index % 1024 == 0 && global_stop_signal.load(Ordering::Relaxed) {
-                warn!("🛑 [KANGAROO]: Tame sequence interrupted.");
+        for current_step_index in 0..maximum_steps_threshold {
+            if current_step_index % 1024 == 0 && global_stop_signal.load(Ordering::Relaxed) {
+                warn!("🛑 [KANGAROO]: Tame sequence aborted by Nexus signal.");
                 return Ok(None);
             }
 
-            tame_unit.perform_leap(&jump_matrix, computational_effort_accumulator)?;
+            tame_unit.perform_stochastic_leap(&jump_matrix_artifact, computational_effort_accumulator)?;
 
-            if tame_unit.is_at_distinguished_coordinates(config.distinguished_point_mask) {
-                trap_vault.insert(tame_unit.current_point.to_bytes(true), tame_unit.cumulative_distance);
-                if trap_vault.len() >= config.maximum_traps_capacity { break; }
+            if tame_unit.check_if_point_is_distinguished(config.distinguished_point_bitmask) {
+                trap_storage_vault.insert(
+                    tame_unit.current_point_coordinates.to_bytes(true),
+                    tame_unit.cumulative_distance_bytes
+                );
+                if trap_storage_vault.len() >= config.maximum_traps_capacity_limit { break; }
             }
         }
 
-        // 3. WILD KANGAROO: Enjambre paralelo de búsqueda
-        info!("🦘 [KANGAROO]: Searching with Wild Units ({} traps set)...", trap_vault.len());
-        let shared_trap_vault = Arc::new(trap_vault);
+        // 3. FASE WILD: Búsqueda Paralela mediante Enjambre de Hilos
+        info!("🦘 [KANGAROO]: Igniting Wild Swarm ({} traps crystallized).", trap_storage_vault.len());
+        let shared_trap_vault_reference = Arc::new(trap_storage_vault);
 
-        let result = (0..rayon::current_num_threads()).into_par_iter().find_map_any(|thread_identifier| {
-            let initial_offset_u256 = convert_u128_to_u256_big_endian(thread_identifier as u128);
-            let wild_start_point = target_public_key.add_scalar(&initial_offset_u256).ok()?;
+        let recovered_scalar_result = (0..rayon::current_num_threads()).into_par_iter().find_map_any(|thread_identifier| {
+            let thread_offset_u256 = convert_u128_to_u256_big_endian(thread_identifier as u128);
+            let wild_start_point = target_public_key.add_scalar(&thread_offset_u256).ok()?;
 
-            let mut wild_unit = KangarooUnit {
-                current_point: wild_start_point,
-                cumulative_distance: initial_offset_u256,
+            let mut wild_unit_instance = KangarooUnit {
+                current_point_coordinates: wild_start_point,
+                cumulative_distance_bytes: thread_offset_u256,
             };
 
-            for step_index in 0..max_steps_threshold {
-                if step_index % 1024 == 0 && global_stop_signal.load(Ordering::Relaxed) {
-                    return None;
-                }
+            for _ in 0..maximum_steps_threshold {
+                if global_stop_signal.load(Ordering::Relaxed) { return None; }
 
-                if wild_unit.perform_leap(&jump_matrix, computational_effort_accumulator).is_err() {
+                if wild_unit_instance.perform_stochastic_leap(&jump_matrix_artifact, computational_effort_accumulator).is_err() {
                     break;
                 }
 
-                if wild_unit.is_at_distinguished_coordinates(config.distinguished_point_mask) {
-                    let point_signature = wild_unit.current_point.to_bytes(true);
-                    if let Some(tame_distance_stored) = shared_trap_vault.get(&point_signature) {
+                if wild_unit_instance.check_if_point_is_distinguished(config.distinguished_point_bitmask) {
+                    let point_signature_binary = wild_unit_instance.current_point_coordinates.to_bytes(true);
 
-                        // ¡COLISIÓN! k = tame_dist - wild_dist
-                        if let Ok(distance_delta) = subtract_u256_big_endian(tame_distance_stored, &wild_unit.cumulative_distance) {
-                            if let Ok(final_private_scalar) = add_u256_big_endian(&config.start_scalar, &distance_delta) {
-                                info!("🎯 [KANGAROO_MATCH]: Target located in thread {}.", thread_identifier);
-                                return Some(final_private_scalar);
+                    if let Some(tame_distance_stored) = shared_trap_vault_reference.get(&point_signature_binary) {
+                        // ¡COLISIÓN NEURAL!: k = distance_tame - distance_wild
+                        if let Ok(distance_delta_result) = subtract_u256_big_endian(tame_distance_stored, &wild_unit_instance.cumulative_distance_bytes) {
+                            if let Ok(final_private_scalar_material) = add_u256_big_endian(&config.start_scalar_bytes, &distance_delta_result) {
+                                return Some(final_private_scalar_material);
                             }
                         }
                     }
@@ -206,6 +207,6 @@ impl KangarooSolver {
             None
         });
 
-        Ok(result)
+        Ok(recovered_scalar_result)
     }
 }

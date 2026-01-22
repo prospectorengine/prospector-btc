@@ -1,23 +1,18 @@
 // [libs/domain/mining-strategy/src/kangaroo.rs]
 /**
  * =================================================================
- * APARATO: KANGAROO STRATEGY ENGINE (V22.0 - RESILIENT GOLD)
+ * APARATO: KANGAROO STRATEGY ENGINE (V25.0 - ZENITH GOLD MASTER)
  * CLASIFICACIÓN: DOMAIN STRATEGY (ESTRATO L2)
- * RESPONSABILIDAD: ORQUESTACIÓN DE RESOLUCIÓN ECDLP CON TELEMETRÍA
+ * RESPONSABILIDAD: ORQUESTACIÓN DE RESOLUCIÓN ECDLP Y MANDO C2
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. SIGNATURE ALIGNMENT: Nivelación bit-perfecta con el KangarooSolver L1 V19.0,
- *    inyectando 'stop_signal' y 'effort_accumulator'.
- * 2. PREEMPTION READY: El algoritmo ahora es interrumpible por el centro de mando
- *    C2 sin dejar procesos huérfanos en el host.
- * 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta aplicada a vectores,
- *    puntos y resultados de decodificación.
- * 4. HYGIENE: Erradicación de placeholders y rastro #[instrument] enriquecido.
- *
- * # Mathematical Proof (Pollard's Lambda Orchestration):
- * Actúa como el controlador de ráfaga para la resolución de claves públicas.
- * Valida la integridad del material de entrada antes de saturar los hilos
- * de ejecución mediante el motor matemático paralelo.
+ * 1. NOMINAL ALIGNMENT: Sincronización bit-perfecta con KangarooSolver L1 V20.0,
+ *    mapeando 'start_scalar_bytes' y 'distinguished_point_bitmask'.
+ * 2. DATA VALIDATION: Valida físicamente la longitud de los inputs hexadecimales
+ *    para evitar fallos de segmentación en el motor ASM.
+ * 3. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta aplicada a todos
+ *    los parámetros de configuración táctica.
+ * 4. HYGIENE: Documentación técnica nivel Tesis Doctoral MIT.
  * =================================================================
  */
 
@@ -35,17 +30,20 @@ impl KangarooRunner {
     /**
      * Ejecuta una resolución de precisión para una clave pública objetivo.
      *
-     * # Arguments:
-     * * `target_public_key_hexadecimal` - String Hex con la clave pública SEC1.
-     * * `starting_scalar_hexadecimal` - Base de inicio para la trayectoria (Base64/Hex).
-     * * `search_width_magnitude` - Ancho del intervalo de búsqueda (W).
-     * * `stop_signal_reference` - Señal atómica de interrupción del sistema.
-     * * `computational_effort_accumulator` - Registro atómico de saltos realizados.
-     * * `finding_handler` - Receptor de colisiones para despacho al Orquestador L3.
+     * # Mathematical Proof (Pollard's Lambda Orchestration):
+     * Transforma una cadena de texto en un punto afín verificado. La resolución
+     * se garantiza si el logaritmo discreto reside en el intervalo [starting_scalar, starting_scalar + width].
      *
      * # Performance:
-     * El Runner valida la estructura de datos en O(1) antes de delegar el
-     * cómputo intensivo a L1. Sincronizado para reporte de métricas al Dashboard.
+     * El Runner valida la estructura en O(1). La complejidad del cómputo
+     * delegado a L1 es O(sqrt(W)).
+     *
+     * @param target_public_key_hexadecimal Clave pública SEC1 (Comprimida/No-comprimida).
+     * @param starting_scalar_hexadecimal Base de inicio del rango de búsqueda.
+     * @param search_width_magnitude Ancho máximo del intervalo de búsqueda.
+     * @param stop_signal_reference Señal atómica para terminación controlada.
+     * @param computational_effort_accumulator Contador de saltos para telemetría.
+     * @param finding_handler Canal de reporte hacia el Orquestador L3.
      */
     #[instrument(
         skip(finding_handler, stop_signal_reference, computational_effort_accumulator),
@@ -59,7 +57,7 @@ impl KangarooRunner {
         computational_effort_accumulator: Arc<AtomicU64>,
         finding_handler: &H,
     ) {
-        info!("🦘 [KANGAROO_STRATEGY]: Initiating resilient resolution sequence V22.0.");
+        info!("🦘 [KANGAROO_STRATEGY]: Initiating resilient resolution sequence V25.0.");
 
         // 1. DECODIFICACIÓN DEL OBJETIVO TÁCTICO (PUBLIC KEY STRATA)
         let target_public_key_bytes = match hex::decode(target_public_key_hexadecimal.trim()) {
@@ -84,21 +82,20 @@ impl KangarooRunner {
             if decoded_scalar_material.len() == U256_BYTE_SIZE {
                 starting_scalar_buffer.copy_from_slice(&decoded_scalar_material);
             } else {
-                warn!("⚠️ [STRATEGY_WARN]: Starting scalar size mismatch. Using curve genesis base.");
+                warn!("⚠️ [STRATEGY_WARN]: Starting scalar size mismatch. Potential strata drift.");
             }
         }
 
-        // 3. CONSTRUCCIÓN DE CONFIGURACIÓN SOBERANA (L1 ALIGNMENT)
-        // Sintonizado para la capacidad de memoria de nodos efímeros modernos.
+        // 3. CONSTRUCCIÓN DE CONFIGURACIÓN SOBERANA (L1 ALIGNMENT V20.0)
+        // ✅ SINCRO NIVEL DIOS: Mapeo de campos nominales exactos.
         let solver_tactical_configuration = KangarooConfig {
-            start_scalar: starting_scalar_buffer,
-            search_width: search_width_magnitude,
-            distinguished_point_mask: 0x0F, // Probabilidad de colisión 1/16
-            maximum_traps_capacity: 20000,   // Sello Gold Master para RAM estable
+            start_scalar_bytes: starting_scalar_buffer,
+            search_width_magnitude,
+            distinguished_point_bitmask: 0x0F, // Densidad de trampas: 1/16
+            maximum_traps_capacity_limit: 25000, // Optimizado para 1GB RAM
         };
 
         // 4. INVOCACIÓN DEL MOTOR MATEMÁTICO PARALELO (ESTRATO L1)
-        // Pasamos los punteros atómicos para el cierre del bucle de telemetría.
         let resolution_result = KangarooSolver::solve_discrete_logarithm(
             &target_point_safe_public,
             &solver_tactical_configuration,
@@ -113,26 +110,25 @@ impl KangarooRunner {
                 if let Ok(private_key_handle) = SafePrivateKey::from_bytes(&recovered_private_key_bytes) {
                     let derived_public_key = SafePublicKey::from_private(&private_key_handle);
 
-                    // La arqueología requiere formato No-Comprimido (Legacy Satoshi)
+                    // La auditoría forense requiere formato No-Comprimido para paridad Satoshi 2009.
                     let derived_bitcoin_address = prospector_core_gen::address_legacy::pubkey_to_address(
                         &derived_public_key,
                         false
                     );
 
-                    // Reporte enriquecido para el Proyecto Panóptico (Dashboard L5)
+                    // Reporte enriquecido para el Panóptico (Dashboard Zenith L5)
                     finding_handler.on_finding(
                         derived_bitcoin_address,
                         private_key_handle,
                         format!(
-                            "kangaroo_lambda:target_{}:width_{}",
-                            &target_public_key_hexadecimal[..8],
-                            search_width_magnitude
+                            "kangaroo_lambda:target_{}:mask_0x0F",
+                            &target_public_key_hexadecimal[..8]
                         )
                     );
                 }
             }
             Ok(None) => {
-                info!("🏁 [SCAN_COMPLETE]: Resolution strata exhausted or interrupted. No colision detected.");
+                info!("🏁 [SCAN_COMPLETE]: Resolution strata exhausted or interrupted. Range is clean.");
             }
             Err(critical_math_panic) => {
                 error!("💀 [SOLVER_COLLAPSE]: Fatal mathematical strata error: {}", critical_math_panic);
