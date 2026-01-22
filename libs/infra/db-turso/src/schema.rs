@@ -1,18 +1,17 @@
 // [libs/infra/db-turso/src/schema.rs]
 /*!
  * =================================================================
- * APARATO: SOVEREIGN DATABASE SCHEMA (V154.0 - FULL SYNC)
+ * APARATO: SOVEREIGN DATABASE SCHEMA (V155.0 - LAB READY)
  * CLASIFICACIÓN: INFRASTRUCTURE LAYER (ESTRATO L3)
  * RESPONSABILIDAD: GOBERNANZA ESTRUCTURAL E IDEMPOTENCIA TOTAL
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. GENESIS-EVOLUTION PARITY: Sincroniza las definiciones base con las
- *    mutaciones evolutivas para una ignición instantánea.
- * 2. HYDRA-ID OPTIMIZATION: Inyección de columnas de identidad persistente
- *    (fingerprint, proxy, metabolic_pulse) directamente en el Génesis.
- * 3. INDEX HARDENING: Adición de 'index_identities_metabolic' para
- *    acelerar la vigilancia del pulso humano.
- * 4. ZERO ABBREVIATIONS: Cumplimiento del estándar nominal de la Tesis.
+ * 1. LAB STRATA MATERIALIZATION: Inyecta la definición de 'test_scenarios'
+ *    para permitir la plantación de Golden Tickets y pruebas de humo.
+ * 2. FORENSIC INDEXING: Adición de 'index_test_scenarios_address' para
+ *    acelerar la interceptación manual en el Laboratorio (L2/L5).
+ * 3. ATOMIC INTEGRITY: Mantenimiento del flujo de solidificación bit-a-bit.
+ * 4. ZERO ABBREVIATIONS: Nomenclatura nominal absoluta nivel Tesis Doctoral.
  * =================================================================
  */
 
@@ -22,7 +21,7 @@ use tracing::{debug, info, instrument, warn};
 
 /**
  * ESTRATO 1: SOLIDIFICACIÓN (Génesis de Tablas)
- * ✅ NIVELADO: Incluye todas las columnas de estrategias L2 y Hydra-ID.
+ * ✅ NIVELADO V155.0: Inclusión del sustrato de laboratorio forense.
  */
 const TACTICAL_TABLES: &[(&str, &str)] = &[
     ("TABLE_JOBS", r#"
@@ -67,6 +66,18 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             usage_count INTEGER DEFAULT 0,
             UNIQUE(platform, email)
+        );
+    "#),
+    ("TABLE_TEST_SCENARIOS", r#"
+        CREATE TABLE IF NOT EXISTS test_scenarios (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            target_address TEXT NOT NULL,
+            secret_phrase TEXT,
+            target_private_key TEXT,
+            status TEXT DEFAULT 'idle',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            verified_at DATETIME
         );
     "#),
     ("TABLE_ACADEMY_PROGRESS", r#"
@@ -136,7 +147,6 @@ const TACTICAL_TABLES: &[(&str, &str)] = &[
 
 /**
  * ESTRATO 2: EVOLUCIÓN (Mutaciones de Columna)
- * Mantenido para resiliencia de bases de datos existentes.
  */
 const EVOLUTIONARY_STRATA: &[(&str, &str)] = &[
     ("JOB_DICT_LOCATOR", "ALTER TABLE jobs ADD COLUMN dataset_resource_locator TEXT"),
@@ -158,21 +168,22 @@ const ACCELERATION_INDEXES: &[(&str, &str)] = &[
     ("INDEX_IDENTITIES_SYNC", "CREATE INDEX IF NOT EXISTS index_identities_availability ON identities(platform, status, leased_until, cooldown_until);"),
     ("INDEX_IDENTITIES_METABOLIC", "CREATE INDEX IF NOT EXISTS index_identities_pulse ON identities(last_metabolic_pulse);"),
     ("INDEX_OUTBOX_POLLING", "CREATE INDEX IF NOT EXISTS index_outbox_status_pending ON outbox_strategic(status, created_at);"),
-    ("INDEX_FINDINGS_SYNC", "CREATE INDEX IF NOT EXISTS index_findings_archival ON findings(archived_at);")
+    ("INDEX_FINDINGS_SYNC", "CREATE INDEX IF NOT EXISTS index_findings_archival ON findings(archived_at);"),
+    ("INDEX_SCENARIOS_ADDR", "CREATE INDEX IF NOT EXISTS index_test_scenarios_address ON test_scenarios(target_address);")
 ];
 
 /**
- * Ejecuta la secuencia maestra de sincronización V154.0.
+ * Ejecuta la secuencia maestra de sincronización V155.0.
  */
 #[instrument(skip(database_connection))]
 pub async fn apply_full_sovereign_schema(database_connection: &Connection) -> Result<()> {
-    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V154.0...");
+    info!("🏗️ [SCHEMA_ENGINE]: Initiating structural synchronization V155.0...");
 
     solidify_base_strata(database_connection).await?;
     execute_evolutionary_repair(database_connection).await?;
     harden_access_layer(database_connection).await?;
 
-    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V154.0 fully synchronized.");
+    info!("✅ [SCHEMA_ENGINE]: Tactical Ledger V155.0 fully synchronized.");
     Ok(())
 }
 

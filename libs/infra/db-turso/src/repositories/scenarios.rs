@@ -1,48 +1,55 @@
-// libs/infra/db-turso/src/repositories/scenarios.rs
-// =================================================================
-// APARATO: TEST SCENARIO REPOSITORY (GOLD MASTER)
-// RESPONSABILIDAD: PERSISTENCIA DE EXPERIMENTOS CRIPTOGRÁFICOS
-// ESTADO: FULL IMPLEMENTATION // NO ABBREVIATIONS
-// =================================================================
+// [libs/infra/db-turso/src/repositories/scenarios.rs]
+/**
+ * =================================================================
+ * APARATO: TEST SCENARIO REPOSITORY (V2.0 - SYNCHRONIZED MASTER)
+ * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
+ * RESPONSABILIDAD: PERSISTENCIA Y AUDITORÍA DE VECTORES DE PRUEBA
+ *
+ * VISION HIPER-HOLÍSTICA 2026:
+ * 1. INDEX PARITY: Corrige el desvío de índices entre el esquema L3
+ *    y el mapeo de Rust, asegurando la integridad del Interceptor.
+ * 2. EXPLICIT SQL: Sustitución de 'SELECT *' por proyecciones nominales
+ *    para blindar el código contra futuras evoluciones del esquema.
+ * 3. LABORATORY API: Inyecta 'list_all' para alimentar la rejilla
+ *    de experimentos del Dashboard Zenith (L5).
+ * 4. HYGIENE: Documentación técnica MIT y rastro forense #[instrument].
+ * =================================================================
+ */
 
 use crate::errors::DbError;
 use crate::TursoClient;
 use libsql::{params, Row};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use tracing::{info, debug, instrument};
 
-/// Representación atómica de un Escenario de Prueba en la Base de Datos.
+/// Representación atómica de un Escenario de Prueba (Golden Ticket).
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TestScenario {
-    /// Identificador único universal.
-    pub id: String,
-    /// Nombre designado para la operación.
-    pub name: String,
-    /// La frase semilla original (Secreto).
-    pub secret_phrase: String,
-    /// La dirección derivada esperada (Target).
-    pub target_address: String,
-    /// La clave privada en formato WIF.
-    pub target_private_key: String,
-    /// Estado del ciclo de vida: idle, active, verified.
-    pub status: String,
-    /// Fecha de cristalización.
-    pub created_at: String,
-    /// Fecha de resolución (opcional).
-    pub verified_at: Option<String>,
+    pub identifier: String,
+    pub operation_name: String,
+    pub entropy_seed_phrase: String,
+    pub target_bitcoin_address: String,
+    pub target_private_key_wif: String,
+    pub current_status: String,
+    pub crystallized_at: String,
+    pub verified_at_timestamp: Option<String>,
 }
 
 pub struct ScenarioRepository {
-    client: TursoClient,
+    database_client: TursoClient,
 }
 
 impl ScenarioRepository {
-    /// Inicializa el repositorio con el cliente de Turso inyectado.
     pub fn new(client: TursoClient) -> Self {
-        Self { client }
+        Self { database_client: client }
     }
 
-    /// Registra un nuevo escenario y retorna la entidad persistida de forma atómica.
+    /**
+     * Registra un nuevo vector dorado en el Ledger de Laboratorio.
+     */
+    #[instrument(skip(self, phrase, wif), fields(op = %name))]
     pub async fn create_atomic(
         &self,
         name: &str,
@@ -50,58 +57,87 @@ impl ScenarioRepository {
         address: &str,
         wif: &str,
     ) -> Result<TestScenario, DbError> {
-        let connection = self.client.get_connection()?;
-        let internal_id = Uuid::new_v4().to_string();
+        let database_connection = self.database_client.get_connection()?;
+        let unique_identifier = Uuid::new_v4().to_string();
 
-        let query = r#"
-            INSERT INTO test_scenarios
-            (id, name, secret_phrase, target_address, target_private_key, status)
-            VALUES (?1, ?2, ?3, ?4, ?5, 'idle')
-            RETURNING id, name, secret_phrase, target_address, target_private_key, status, created_at, verified_at
+        let sql_statement = r#"
+            INSERT INTO test_scenarios (
+                id, name, target_address, secret_phrase, target_private_key, status
+            ) VALUES (?1, ?2, ?3, ?4, ?5, 'idle')
+            RETURNING id, name, target_address, secret_phrase, target_private_key, status, created_at, verified_at
         "#;
 
-        let mut rows = connection
-            .query(query, params![internal_id, name, phrase, address, wif])
-            .await
-            .map_err(DbError::QueryError)?;
+        let mut query_results = database_connection
+            .query(sql_statement, params![unique_identifier, name, address, phrase, wif])
+            .await?;
 
-        if let Some(row) = rows.next().await.map_err(DbError::QueryError)? {
-            self.map_row_to_entity(row)
+        if let Some(data_row) = query_results.next().await? {
+            self.map_row_to_sovereign_entity(data_row)
         } else {
-            Err(DbError::MappingError(
-                "Atomic insert failed: No data returned from DB".into(),
-            ))
+            Err(DbError::MappingError("ATOMIC_INSERT_VOID: No data returned from strata.".into()))
         }
     }
 
-    /// Busca un escenario por su dirección objetivo (Usado por The Interceptor).
-    pub async fn find_by_address(&self, address: &str) -> Result<Option<TestScenario>, DbError> {
-        let connection = self.client.get_connection()?;
+    /**
+     * Busca un escenario por dirección Bitcoin (Hot-Path del Interceptor).
+     */
+    #[instrument(skip(self, address))]
+    pub async fn find_by_target_address(&self, address: &str) -> Result<Option<TestScenario>, DbError> {
+        let database_connection = self.database_client.get_connection()?;
 
-        let query = "SELECT * FROM test_scenarios WHERE target_address = ?1 LIMIT 1";
-        let mut rows = connection
-            .query(query, params![address.trim()])
-            .await
-            .map_err(DbError::QueryError)?;
+        // Selección explícita para garantizar paridad de índices
+        let sql_query = "
+            SELECT id, name, target_address, secret_phrase, target_private_key, status, created_at, verified_at
+            FROM test_scenarios
+            WHERE target_address = ?1
+            LIMIT 1
+        ";
 
-        if let Some(row) = rows.next().await.map_err(DbError::QueryError)? {
-            Ok(Some(self.map_row_to_entity(row)?))
+        let mut query_results = database_connection.query(sql_query, params![address.trim()]).await?;
+
+        if let Some(data_row) = query_results.next().await? {
+            Ok(Some(self.map_row_to_sovereign_entity(data_row)?))
         } else {
             Ok(None)
         }
     }
 
-    /// Mapeo estricto de fila SQL a Entidad de Rust.
-    fn map_row_to_entity(&self, row: Row) -> Result<TestScenario, DbError> {
+    /**
+     * Recupera el inventario completo de experimentos para el Dashboard.
+     */
+    pub async fn list_all_scenarios(&self) -> Result<Vec<TestScenario>, DbError> {
+        let database_connection = self.database_client.get_connection()?;
+
+        let sql_query = "
+            SELECT id, name, target_address, secret_phrase, target_private_key, status, created_at, verified_at
+            FROM test_scenarios
+            ORDER BY created_at DESC
+        ";
+
+        let mut query_results = database_connection.query(sql_query, ()).await?;
+        let mut scenarios_collection = Vec::new();
+
+        while let Some(data_row) = query_results.next().await? {
+            scenarios_collection.push(self.map_row_to_sovereign_entity(data_row)?);
+        }
+
+        Ok(scenarios_collection)
+    }
+
+    /**
+     * Mapeo Bit-Perfecto entre el sustrato SQL y el Dominio Rust.
+     * ✅ RESOLUCIÓN V2.0: Índices sincronizados con el esquema V155.0.
+     */
+    fn map_row_to_sovereign_entity(&self, data_row: Row) -> Result<TestScenario, DbError> {
         Ok(TestScenario {
-            id: row.get(0).map_err(DbError::QueryError)?,
-            name: row.get(1).map_err(DbError::QueryError)?,
-            secret_phrase: row.get(2).map_err(DbError::QueryError)?,
-            target_address: row.get(3).map_err(DbError::QueryError)?,
-            target_private_key: row.get(4).map_err(DbError::QueryError)?,
-            status: row.get(5).map_err(DbError::QueryError)?,
-            created_at: row.get(6).map_err(DbError::QueryError)?,
-            verified_at: row.get(7).ok(),
+            identifier: data_row.get(0)?,
+            operation_name: data_row.get(1)?,
+            target_bitcoin_address: data_row.get(2)?,
+            entropy_seed_phrase: data_row.get(3)?,
+            target_private_key_wif: data_row.get(4)?,
+            current_status: data_row.get(5)?,
+            crystallized_at: data_row.get(6)?,
+            verified_at_timestamp: data_row.get(7).ok(),
         })
     }
 }
