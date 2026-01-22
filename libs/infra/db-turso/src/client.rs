@@ -21,7 +21,7 @@ use crate::errors::DbError;
 use crate::schema::apply_full_sovereign_schema;
 use libsql::{Builder, Connection, Database};
 use std::sync::Arc;
-use tracing::{info, error, instrument, warn, debug};
+use tracing::{info, error, instrument, debug};
 
 /**
  * Cliente soberano para la interacción con el Motor A (Turso/libSQL).

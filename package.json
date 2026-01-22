@@ -13,24 +13,20 @@
     "postinstall": "husky",
     "nx": "nx",
     "clean": "rimraf dist target apps/web-dashboard/.next",
-
     "___L1_DEVELOPMENT___": "--- [ LOCAL WORKFLOWS ] ---",
     "dev:web": "pnpm i18n:generate && nx serve web-dashboard",
     "dev:orch": "cargo run --bin orchestrator",
     "dev:infra": "docker-compose up",
-
     "___L2_I18N_ENGINE___": "--- [ GLOBAL LOCALIZATION ] ---",
     "i18n:generate": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\",\\\"esModuleInterop\\\":true}\" ts-node --project tsconfig.base.json apps/web-dashboard/tools/scripts/generate-i18n.ts",
     "i18n:sync": "pnpm i18n:generate && pnpm exec nx lint web-dashboard --fix",
-
-   "___L3_INFRASTRUCTURE___": "--- [ DATABASE & CLOUD PULSE ] ---",
-"db:migrate": "cargo run --release --bin migrator",
-"db:seed": "cargo run --release --bin seed",
-"db:turso:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-pulse.ts",
-"db:turso:audit": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/omniscient-audit.ts",
-"db:turso:snapshot": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-snapshot.ts",
-"db:turso:all": "pnpm db:turso:pulse && pnpm db:migrate && pnpm db:seed && pnpm db:turso:audit && pnpm db:turso:snapshot",
-
+    "___L3_INFRASTRUCTURE___": "--- [ DATABASE & CLOUD PULSE ] ---",
+    "db:migrate": "cargo run --release --bin migrator",
+    "db:seed": "cargo run --release --bin seed",
+    "db:turso:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-pulse.ts",
+    "db:turso:audit": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/omniscient-audit.ts",
+    "db:turso:snapshot": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-snapshot.ts",
+    "db:turso:all": "pnpm db:turso:pulse && pnpm db:migrate && pnpm db:seed && pnpm db:turso:audit && pnpm db:turso:snapshot",
     "__L4_QUALITY_ASSURANCE__": "--- [ TRINITY AUDIT PROTOCOL ] ---",
     "audit:all": "pnpm audit:logic && pnpm audit:system",
     "audit:logic": "nx run-many -t lint test --all --parallel=1",
@@ -38,7 +34,6 @@
     "audit:identities": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/audit-identities.ts",
     "audit:health": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/audit-identities-health.ts",
     "audit:math": "cargo test --workspace --release --package prospector-core-math",
-
     "___L5_DEPLOYMENT___": "--- [ ELITE build & IGNITION ] ---",
     "build:web": "pnpm i18n:generate && nx build web-dashboard --prod",
     "build:orch": "cargo build --release --bin orchestrator",
@@ -48,7 +43,7 @@
     "audit:rust": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-rust-coherence.ts",
     "audit:nx": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-project-json-rules.ts",
     "audit:boundaries": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-package-boundaries.ts",
-"audit:jest": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-jest-uniformity.ts"
+    "audit:jest": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/certify-jest-uniformity.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.1",
@@ -74,6 +69,7 @@
     "next-intl": "3.26.1",
     "next-themes": "0.4.4",
     "p-limit": "3.1.0",
+    "pg": "^8.17.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-hook-form": "7.54.1",

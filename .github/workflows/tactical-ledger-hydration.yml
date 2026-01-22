@@ -2,49 +2,37 @@ name: "💠 Hydra Genesis: Tactical Ledger Hydration"
 
 on:
   workflow_dispatch:
-    inputs:
-      reason:
-        description: 'Mando Protocol'
-        required: true
-        default: 'MANUAL_GENESIS_IGNITION'
 
 jobs:
   ignition:
     name: "Crystallizing Genesis Strata"
     runs-on: ubuntu-latest
-    # 🛡️ CRÍTICO: Especificamos el entorno donde usted creó los secretos/variables
-    environment: main
-
-    concurrency:
-      group: ledger-hydration
-      cancel-in-progress: false
+    # Eliminamos 'environment: main' para usar los secretos globales del repo
 
     steps:
       - name: "🛰️ [1/4] Adquiring Source Code"
         uses: actions/checkout@v4
 
-      - name: "🦀 [2/4] Initializing Rust Toolchain"
+      - name: "Crabe [2/4] Initializing Rust Toolchain"
         uses: dtolnay/rust-toolchain@nightly
-
-      - name: "📦 [3/4] Synchronizing Binary Cache"
-        uses: Swatinem/rust-cache@v2
 
       - name: "🧬 [4/4] Executing Atomic Seed Sequence (Release Mode)"
         env:
-          # --- MAPEO DE SECRETOS (GB -> SISTEMA) ---
+          # Mapeo directo desde Repository Secrets
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
           GITHUB_PAT: ${{ secrets.GB_PAT }}
 
-          # --- MAPEO DE VARIABLES (GB -> SISTEMA) ---
+          # Mapeo directo desde Repository Variables
           GITHUB_OWNER: ${{ vars.GB_OWNER }}
           GITHUB_REPO: ${{ vars.GB_REPO }}
           ORCHESTRATOR_URL: ${{ vars.ORCHESTRATOR_URL }}
           FILTER_BASE_URL: ${{ vars.FILTER_BASE_URL }}
           FILTER_SHARDS: ${{ vars.FILTER_SHARDS }}
-
           RUST_LOG: info
         run: |
-          echo "Building and firing Seeder with GB_Strata mapping..."
+          echo "Building and firing Seeder V180.5..."
+          # Verificación de integridad de inyección
+          if [ -z "$DATABASE_URL" ]; then echo "❌ FATAL: DATABASE_URL is empty. Check Repository Secrets."; exit 1; fi
           cargo run --release --bin seed

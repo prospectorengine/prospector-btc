@@ -16,7 +16,7 @@
  */
 
 use prospector_infra_db::TursoClient;
-use tracing::{info, error, warn, instrument, debug};
+use tracing::{info, error, debug};
 use dotenvy::dotenv;
 use uuid::Uuid;
 use libsql::params;
