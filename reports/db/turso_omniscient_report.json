@@ -1,33 +1,26 @@
 {
-  "timestamp": "2026-01-20T20:35:03.236Z",
+  "timestamp": "2026-01-22T19:30:33.925Z",
   "network": {
-    "latency_ms": "747.73",
+    "latency_ms": "2579.79",
     "status": "OPERATIONAL"
   },
   "topology": {
     "tables_found": [
       "jobs",
-      "findings",
       "identities",
-      "system_state",
-      "scenario_templates",
-      "test_scenarios",
-      "workers",
       "academy_progress",
       "knowledge_modules",
       "affiliate_network",
-      "outbox_strategic"
+      "system_state",
+      "outbox_strategic",
+      "findings"
     ],
-    "schema_integrity": "DRIFT_DETECTED",
-    "missing_columns_in_jobs": [
-      "dataset_resource_locator",
-      "target_public_key_hexadecimal",
-      "range_width_max"
-    ]
+    "schema_integrity": "NOMINAL",
+    "missing_columns_in_jobs": []
   },
   "content": {
-    "total_missions": 4322,
-    "active_identities": 8,
+    "total_missions": 0,
+    "active_identities": 0,
     "stuck_leases": 0
   },
   "verdict": "DEGRADED"
