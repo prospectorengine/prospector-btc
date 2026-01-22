@@ -1,22 +1,21 @@
 // [libs/core/math-engine/src/kangaroo.rs]
 /**
  * =================================================================
- * APARATO: KANGAROO MATRIX SOLVER (V20.0 - ZENITH GOLD MASTER)
+ * APARATO: KANGAROO MATRIX SOLVER (V21.0 - DOCUMENTATION SEALED)
  * CLASIFICACIÓN: CORE MATH (ESTRATO L1)
- * RESPONSABILIDAD: RESOLUCIÓN PARALELA DE ECDLP CON MÁSCARA DINÁMICA
+ * RESPONSABILIDAD: RESOLUCIÓN PARALELA DE ECDLP CON RIGOR ACADÉMICO
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. SEC1 INDEX CORRECTION: Sincroniza la detección de puntos distinguidos
- *    con el byte final de la coordenada X (index 32), no el buffer 31.
- * 2. DYNAMIC SPARSITY: Habilita el control total de la densidad de trampas
- *    vía 'distinguished_point_bitmask'.
- * 3. ZERO ABBREVIATIONS: Erradicación de 'i', 'idx', 'res' y 'msg'.
- * 4. BOUNDARY AUDIT: Validación de ancho de búsqueda para prevenir pánicos.
+ * 1. COMPILATION SHIELD: Inyecta documentación técnica exhaustiva para
+ *    satisfacer la directiva '#![deny(missing_docs)]' y liberar el build.
+ * 2. SEC1 ALIGNMENT: Mantenimiento de la corrección de indexación (byte 32)
+ *    para la detección de puntos distinguidos en formato comprimido.
+ * 3. NOMINAL PURITY: Nomenclatura nominal absoluta en todos los carriles SIMD.
+ * 4. HYGIENE: Cero advertencias de compilación bajo el estándar Gold Master.
  *
- * # Mathematical Proof (Pollard's Lambda):
- * El sistema busca el escalar 'k' tal que k*G = Target. Utiliza dos
- * trayectorias: una 'Tame' (domada) que siembra trampas y una 'Wild'
- * (salvaje) que busca caer en ellas. La colisión revela la clave privada.
+ * # Mathematical Proof (Pollard's Lambda with DP):
+ * El sistema garantiza la resolución del logaritmo discreto 'k' mediante
+ * el cálculo de la colisión: k = (Distancia_Tame - Distancia_Wild) mod n.
  * =================================================================
  */
 
@@ -34,30 +33,35 @@ use rayon::prelude::*;
 use tracing::{info, debug, warn, instrument};
 
 /// Configuración operativa para la ráfaga de resolución del algoritmo Canguro.
+///
+/// Define los parámetros de red y límites de memoria para el enjambre distribuido.
 pub struct KangarooConfig {
-    /// Escalar inicial hexadecimal del rango de búsqueda.
+    /// Escalar inicial hexadecimal del rango de búsqueda representado en bytes.
     pub start_scalar_bytes: [u8; U256_BYTE_SIZE],
-    /// Ancho total del espacio de búsqueda (Rango W).
+    /// Ancho total del espacio de búsqueda (Rango W) en magnitud absoluta.
     pub search_width_magnitude: u64,
     /// Máscara binaria para la detección de Puntos Distinguidos (Sparsity).
+    /// Controla la frecuencia de inserción en la bóveda de trampas.
     pub distinguished_point_bitmask: u8,
-    /// Capacidad máxima del almacén de trampas en memoria RAM.
+    /// Capacidad máxima del almacén de trampas en memoria RAM antes de saturación.
     pub maximum_traps_capacity_limit: usize,
 }
 
+/// Entrada individual en la matriz de saltos deterministas.
 #[derive(Clone, Copy)]
 struct LeapTableEntry {
     /// Escalar de salto precomputado en formato big_endian.
     pub scalar_step_bytes: [u8; U256_BYTE_SIZE],
-    /// Distancia lógica recorrida en la curva tras el salto.
+    /// Distancia lógica recorrida en la curva tras la ejecución del salto.
     pub distance_weight_magnitude: u128,
 }
 
+/// Unidad de cómputo autónoma encargada de recorrer la trayectoria en la curva.
 #[derive(Clone)]
 struct KangarooUnit {
-    /// Punto actual en la curva secp256k1 (Coordenada Afín).
+    /// Punto actual en la curva secp256k1 (Representación Afín).
     pub current_point_coordinates: SafePublicKey,
-    /// Distancia acumulada desde el origen de la trayectoria.
+    /// Distancia acumulada desde el origen de la trayectoria actual.
     pub cumulative_distance_bytes: [u8; U256_BYTE_SIZE],
 }
 
@@ -65,10 +69,9 @@ impl KangarooUnit {
     /**
      * Ejecuta un salto estocástico determinista basado en la posición actual.
      *
-     * # Logic:
-     * El selector de salto utiliza el último byte de la coordenada X para
-     * garantizar que canguros de distintos orígenes sigan la misma ruta
-     * al entrar en el mismo punto de la curva.
+     * # Mathematical Proof:
+     * El selector de salto se deriva del byte final de la coordenada X para
+     * garantizar que las trayectorias converjan bit-perfectamente al colisionar.
      */
     #[inline(always)]
     fn perform_stochastic_leap(
@@ -96,27 +99,39 @@ impl KangarooUnit {
     }
 
     /**
-     * Evalúa si las coordenadas actuales satisfacen el nivel de distinción requerido.
+     * Evalúa si las coordenadas actuales cumplen con el predicado de distinción.
      */
     #[inline(always)]
     fn check_if_point_is_distinguished(&self, bitmask_value: u8) -> bool {
         let serialized_point_bytes = self.current_point_coordinates.to_bytes(true);
-        // Filtramos por el byte final de la coordenada X
+        // Filtramos por el byte final de la coordenada X para una distribución estadística uniforme.
         (serialized_point_bytes[32] & bitmask_value) == 0
     }
 }
 
+/// Solucionador de alto rendimiento para el Problema del Logaritmo Discreto (ECDLP).
+///
+/// Implementa el algoritmo de los Canguros de Pollard con optimización de Puntos Distinguidos.
 pub struct KangarooSolver;
 
 impl KangarooSolver {
     /**
      * Ejecuta la resolución criptográfica de un punto público con conciencia de sistema.
      *
+     * # Mathematical Proof:
+     * El motor forja una trayectoria 'Tame' sincronizada con el rango y lanza un
+     * enjambre paralelo de trayectorias 'Wild' desde el punto objetivo.
+     *
      * # Performance:
-     * Complejidad O(sqrt(W)). Utiliza paralelismo masivo de hilos para la fase Wild.
+     * Complejidad media de O(sqrt(W)). Utiliza paralelismo Rayon para saturar los hilos de CPU.
      *
      * # Errors:
-     * Retorna 'MathError' si el search_width es inconsistente o la aritmética colapsa.
+     * Retorna 'MathError' ante desbordamientos aritméticos o fallos de geometría en la curva.
+     *
+     * @param target_public_key El punto Q cuya clave privada deseamos recuperar.
+     * @param config Configuración soberana del rango y la máscara de bits.
+     * @param global_stop_signal Señal de interrupción del orquestador.
+     * @param computational_effort_accumulator Contador para telemetría en tiempo real.
      */
     #[instrument(skip_all, fields(width = config.search_width_magnitude))]
     pub fn solve_discrete_logarithm(
@@ -143,7 +158,7 @@ impl KangarooSolver {
         let search_width_u256_artifact = convert_u128_to_u256_big_endian(config.search_width_magnitude as u128);
 
         // 2. FASE TAME: Sembrado de Trampas en el KeySpace
-        debug!("🦘 [KANGAROO]: Materializing Tame Trajectories...");
+        debug!("🦘 [KANGAROO]: Materializing Tame Trajectories and setting traps...");
 
         let tame_start_point = base_point_jacobian.add_scalar(&search_width_u256_artifact)?;
         let mut tame_unit = KangarooUnit {
@@ -156,7 +171,7 @@ impl KangarooSolver {
 
         for current_step_index in 0..maximum_steps_threshold {
             if current_step_index % 1024 == 0 && global_stop_signal.load(Ordering::Relaxed) {
-                warn!("🛑 [KANGAROO]: Tame sequence aborted by Nexus signal.");
+                warn!("🛑 [KANGAROO]: Tame sequence aborted by system signal.");
                 return Ok(None);
             }
 
@@ -171,7 +186,7 @@ impl KangarooSolver {
             }
         }
 
-        // 3. FASE WILD: Búsqueda Paralela mediante Enjambre de Hilos
+        // 3. FASE WILD: Búsqueda Paralela mediante Enjambre de Hilos (Rayon)
         info!("🦘 [KANGAROO]: Igniting Wild Swarm ({} traps crystallized).", trap_storage_vault.len());
         let shared_trap_vault_reference = Arc::new(trap_storage_vault);
 
