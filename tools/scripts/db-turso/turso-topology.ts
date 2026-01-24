@@ -1,56 +1,50 @@
 /**
- * =================================================================
- * APARATO: TURSO TOPOLOGY INSPECTOR (V1.2 - REMOTE ONLY)
- * CLASIFICACIÓN: INFRASTRUCTURE DIAGNOSTIC (ESTRATO L6)
- * RESPONSABILIDAD: Auditoría estructural y conteo de registros remotos.
- * =================================================================
+ * APARATO: TURSO TOPOLOGY INSPECTOR (V2.0 - IA REPORT READY)
+ * RESPONSABILIDAD: Auditoría estructural y conteo de registros.
+ * SALIDA: reports/turso/topology_report.json
  */
-
-import { createClient, type Client } from '@libsql/client';
+import { createClient } from '@libsql/client';
 import chalk from 'chalk';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
-async function executeTopologyAudit(): Promise<void> {
-    const databaseUrl = process.env.DATABASE_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
+const REPORT_FILE = path.join(process.cwd(), 'reports', 'turso', 'topology_report.json');
 
-    console.log(chalk.bold.magenta("\n🕵️  [TURSO_TOPOLOGY]: Analyzing Remote Structural Strata...\n"));
+async function execute_topology() {
+    console.log(chalk.bold.magenta("\n🕵️  [TOPOLOGY]: Analyzing Structural Strata..."));
+    
+    const client = createClient({
+        url: process.env.DATABASE_URL!,
+        authToken: process.env.TURSO_AUTH_TOKEN!,
+    });
 
-    if (!databaseUrl || !authToken) {
-        console.error(chalk.red("❌ [CONFIG_FAULT]: Credentials missing in environment."));
-        process.exit(1);
-    }
-
-    const client: Client = createClient({ url: databaseUrl, authToken });
+    const report: any = {
+        timestamp: new Date().toISOString(),
+        tables: {},
+        indexes: []
+    };
 
     try {
-        // 1. Auditoría de Inventario de Tablas
-        console.log(chalk.yellow("📋 TABLE_INVENTORY:"));
-        const masterScan = await client.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        );
-
-        for (const row of masterScan.rows) {
-            const tableName = row.name as string;
-            const countResult = await client.execute(`SELECT COUNT(*) as total FROM ${tableName}`);
-            const totalRecords = countResult.rows[0].total;
-            console.log(chalk.white(`  - ${tableName.padEnd(20)} [${totalRecords} records]`));
+        const tables = await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+        for (const row of tables.rows) {
+            const name = row.name as string;
+            const count = await client.execute(`SELECT COUNT(*) as c FROM ${name}`);
+            report.tables[name] = Number(count.rows[0].c);
         }
+        
+        const indexes = await client.execute("SELECT name, tbl_name FROM sqlite_master WHERE type='index'");
+        report.indexes = indexes.rows.map(r => ({ name: r.name, table: r.tbl_name }));
 
-        // 2. Auditoría de Motores de Aceleración (Índices)
-        console.log(chalk.yellow("\n🚀 ACCELERATION_INDEXES:"));
-        const indexScan = await client.execute(
-            "SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'"
-        );
-        for (const row of indexScan.rows) {
-            console.log(chalk.gray(`  - ${String(row.name).padEnd(25)} on table [${row.tbl_name}]`));
-        }
-
+        console.log(chalk.green(`  ✅ TOPOLOGY_MAPPED: ${tables.rows.length} tables found.`));
     } catch (error: any) {
-        console.error(chalk.red(`\n❌ [TOPOLOGY_FAULT]: ${error.message}`));
+        report.error = error.message;
+    } finally {
+        fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
+        client.close();
     }
 }
 
-executeTopologyAudit();
+execute_topology();

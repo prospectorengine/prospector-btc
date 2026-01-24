@@ -1,28 +1,31 @@
-# [libs/domain/forensics/Cargo.toml]
+# [libs/domain/notification/Cargo.toml]
 [package]
 name = "prospector-domain-forensics"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 authors = ["Raz Podesta <metaShark Tech>"]
-description = "Módulo de Arqueología Digital: Reconstrucción determinista de patrones de entropía defectuosa históricos (Debian/Android)."
+description = "Módulo de Arqueología Digital: Reconstrucción determinista de patrones de entropía defectuosa históricos (Debian 2008, Android 2013, Luno 2014)."
+license = "MIT"
 
 [dependencies]
 # --- SINAPSIS INTERNA SOBERANA ---
-# Hereda la infraestructura matemática nivelada
+# Hereda la infraestructura matemática y de tipos del núcleo L1
 prospector-core-math = { workspace = true }
 
-# --- MOTORES DE RECONSTRUCCIÓN ---
-# Utilizado para el manejo preciso de Endianness en PIDs y Semillas
+# --- MOTORES DE RECONSTRUCCIÓN Y CRIPTO ---
+# Requerido para el motor Luno 2014 (Sincronización con traza Render)
+sha2 = { workspace = true }
+# Utilizado para el manejo preciso de Endianness en PIDs y Semillas temporales
 byteorder = "1.5"
 
 # --- OBSERVABILIDAD E INSTRUMENTACIÓN ---
-# Permite el rastreo de la reconstrucción en el Panóptico
+# Permite el rastreo de la reconstrucción forense en el Panóptico L5
 tracing = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 # --- ARMAMENTO PARA EL PROVING GROUNDS ---
-# Requerido para el reporte forense automático al Dashboard
+# Requerido para el reporte forense automático y validación de ráfagas
 reqwest = { workspace = true, features = ["blocking", "json"] }
 serde_json = { workspace = true }
 chrono = { workspace = true }
@@ -42,9 +45,8 @@ path = "src/lib.rs"
 name = "debian_integrity_test"
 path = "../../../tests/mirror/libs/domain/forensics/debian_integrity.test.rs"
 
-# =================================================================
-# NOTA TÉCNICA:
-# Este aparato implementa iteradores puros (Zero-Alloc) para
-# simular el comportamiento de generadores vulnerables, permitiendo
-# que el enjambre audite el pasado con eficiencia de 2026.
-# =================================================================
+# 2. Auditoría de Arqueología Luno/Blockchain.info 2014
+# Certifica la reconstrucción de entropía basada en milisegundos reales.
+[[test]]
+name = "luno_integrity_test"
+path = "../../../tests/mirror/libs/domain/forensics/luno_integrity.test.rs"

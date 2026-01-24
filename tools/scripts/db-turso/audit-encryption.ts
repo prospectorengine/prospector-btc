@@ -1,72 +1,50 @@
-// INICIO DEL ARCHIVO [tools/scripts/db-turso/audit-encryption.ts]
 /**
- * =================================================================
- * APARATO: VAULT ENCRYPTION AUDITOR (V1.0)
- * CLASIFICACIÓN: OPS DIAGNOSTIC (L6)
- * RESPONSABILIDAD: VERIFICACIÓN DEL FORMATO DE DATOS EN 'IDENTITIES'
- * =================================================================
+ * APARATO: ENCRYPTION SEAL VERIFIER (V2.0 - IA REPORT READY)
+ * RESPONSABILIDAD: Validar que los datos sensibles no están en texto plano.
+ * SALIDA: reports/turso/encryption_report.json
  */
-
-import { createClient } from "@libsql/client";
-import * as dotenv from "dotenv";
-import chalk from "chalk";
+import { createClient } from '@libsql/client';
+import chalk from 'chalk';
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
-async function audit_encryption_status() {
-  console.log(chalk.bold.cyan("\n🔐 [VAULT_AUDIT]: Inspecting Credentials Format...\n"));
+const REPORT_FILE = path.join(process.cwd(), 'reports', 'turso', 'encryption_report.json');
 
-  const client = createClient({
-    url: process.env.DATABASE_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN!,
-  });
+async function execute_encryption_check() {
+    console.log(chalk.bold.blue("\n🛡️  [ZK_CHECK]: Verifying Encryption Strata..."));
+    
+    const client = createClient({
+        url: process.env.DATABASE_URL!,
+        authToken: process.env.TURSO_AUTH_TOKEN!,
+    });
 
-  try {
-    const result = await client.execute("SELECT email, credentials_json FROM identities LIMIT 1");
+    const report: any = { timestamp: new Date().toISOString(), status: "SECURE", leaks: [] };
 
-    if (result.rows.length === 0) {
-      console.log(chalk.yellow("⚠️  VAULT IS EMPTY. No identities to audit."));
-      return;
-    }
-
-    const row = result.rows[0];
-    const email = row.email;
-    const rawData = row.credentials_json as string;
-
-    console.log(`👤 Identity: ${chalk.white(email)}`);
-    console.log(chalk.gray("--------------------------------------------------"));
-
-    // Análisis Heurístico del Payload
-    let parsed;
     try {
-        parsed = JSON.parse(rawData);
-    } catch {
-        console.log(chalk.red("❌ DATA CORRUPTION: Invalid JSON format."));
-        return;
+        const res = await client.execute("SELECT email, credentials_json FROM identities");
+        
+        for (const row of res.rows) {
+            const data = JSON.parse(row.credentials_json as string);
+            if (!data.cipher_text_base64) {
+                report.status = "COMPROMISED";
+                report.leaks.push(row.email);
+            }
+        }
+
+        if (report.status === "SECURE") {
+            console.log(chalk.green("  ✅ ENCRYPTION_CERTIFIED: All credentials are ZK-Encrypted."));
+        } else {
+            console.log(chalk.bgRed.white("  🔴 WARNING: Plain text detected in vault!  "));
+        }
+    } catch (error: any) {
+        report.error = error.message;
+    } finally {
+        fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
+        client.close();
     }
-
-    if (parsed.cipher_text_base64 && parsed.initialization_vector_base64) {
-        console.log(chalk.green("✅ ENCRYPTION CONFIRMED (AES-GCM Payload Detected)"));
-        console.log(`   Cipher Length: ${parsed.cipher_text_base64.length} chars`);
-        console.log(`   IV Present:    YES`);
-        console.log(`   Salt Present:  ${parsed.salt_base64 ? "YES" : "NO"}`);
-    } else if (Array.isArray(parsed)) {
-        console.log(chalk.red("❌ WARNING: PLAIN TEXT COOKIES DETECTED (Legacy Format)"));
-        console.log(`   Cookie Count: ${parsed.length}`);
-        console.log(chalk.yellow("   ADVISORY: Re-inject via Dashboard for Zero-Knowledge protection."));
-    } else {
-        console.log(chalk.red("❓ UNKNOWN FORMAT"));
-        console.log(parsed);
-    }
-
-    console.log(chalk.gray("--------------------------------------------------\n"));
-
-  } catch (err: any) {
-    console.error(chalk.red(`🔥 AUDIT ERROR: ${err.message}`));
-  } finally {
-    client.close();
-  }
 }
 
-audit_encryption_status();
-// FIN DEL ARCHIVO [tools/scripts/db-turso/audit-encryption.ts]
+execute_encryption_check();

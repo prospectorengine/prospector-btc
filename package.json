@@ -26,7 +26,8 @@
     "db:turso:pulse": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-pulse.ts",
     "db:turso:audit": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/omniscient-audit.ts",
     "db:turso:snapshot": "cross-env TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\"}\" ts-node tools/scripts/db-turso/turso-snapshot.ts",
-    "db:turso:all": "pnpm db:turso:pulse && pnpm db:migrate && pnpm db:seed && pnpm db:turso:audit && pnpm db:turso:snapshot",
+    "db:turso:audit-all": "pnpm db:turso:pulse && pnpm db:turso:topology && pnpm audit:identities && npx ts-node tools/scripts/db-turso/audit-encryption.ts",
+
     "__L4_QUALITY_ASSURANCE__": "--- [ TRINITY AUDIT PROTOCOL ] ---",
     "audit:all": "pnpm audit:logic && pnpm audit:system",
     "audit:logic": "nx run-many -t lint test --all --parallel=1",
