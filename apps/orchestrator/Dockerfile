@@ -46,7 +46,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 
 # Compilación del binario final del Orquestador
-RUN cargo build --release --bin orchestrator
+RUN cargo build --release --bin orchestrator -j 1
 
 # --- ETAPA 4: RUNTIME (ESTRATO BLINDADO) ---
 # Usamos una imagen ligera de Debian para el despliegue final
