@@ -32,40 +32,49 @@ name = "prospector_core_math"
 path = "src/lib.rs"
 
 # =================================================================
-# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V17.0 - SOBERANA)
+# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V17.0 - GOLD MASTER)
 # =================================================================
+# Sincronizada bit-a-bit con los archivos del Proving Grounds.
 
+# 1. Auditoría de Aritmética U256 (ADX/ASM & Acarreos)
 [[test]]
-name = "arithmetic_kernel_audit"
-path = "../../../tests/mirror/libs/core/math_engine/arithmetic_kernel_audit.rs"
+name = "arithmetic_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs"
 
+# 2. Auditoría de Campo Finito Fp (Montgomery & Tortura Isomórfica)
 [[test]]
-name = "field_strata_audit"
-path = "../../../tests/mirror/libs/core/math_engine/field_strata_audit.rs"
+name = "field_integrity_torture"
+path = "../../../tests/mirror/libs/core/math_engine/field_integrity_torture.test.rs"
 
+# 3. Auditoría de Geometría de Curva (Leyes de Grupo SEC1)
 [[test]]
-name = "curve_geometry_audit"
-path = "../../../tests/mirror/libs/core/math_engine/curve_geometry_audit.rs"
+name = "secp256k1_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity.test.rs"
 
+# 4. Auditoría de Aritmética Escalar (Modulo n)
 [[test]]
-name = "scalar_modular_audit"
-path = "../../../tests/mirror/libs/core/math_engine/scalar_modular_audit.rs"
+name = "scalar_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/scalar_integrity.test.rs"
 
+# 5. Auditoría de Isomorfismo SIMD (Campo Finito 4-Way)
 [[test]]
-name = "silicon_isomorphism_audit"
-path = "../../../tests/mirror/libs/core/math_engine/silicon_isomorphism_audit.rs"
+name = "field_simd_isomorphism"
+path = "../../../tests/mirror/libs/core/math_engine/field_simd_isomorphism.test.rs"
 
+# 6. Auditoría de Paridad SIMD (Leyes de Curva Parallel)
 [[test]]
-name = "generator_lut_audit"
-path = "../../../tests/mirror/libs/core/math_engine/generator_lut_audit.rs"
+name = "curve_simd_parity"
+path = "../../../tests/mirror/libs/core/math_engine/curve_simd_parity.test.rs"
 
+# 7. Auditoría de Tabla de Pre-cómputo (Static LUT)
 [[test]]
-name = "kangaroo_solver_audit"
-path = "../../../tests/mirror/libs/core/math_engine/kangaroo_solver_audit.rs"
+name = "generator_table_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/generator_table_integrity.test.rs"
 
+# 8. Auditoría de Resolutor ECDLP (Canguros de Pollard)
 [[test]]
-name = "prelude_registry_audit"
-path = "../../../tests/mirror/libs/core/math_engine/prelude_registry_audit.rs"
+name = "kangaroo_integrity"
+path = "../../../tests/mirror/libs/core/math_engine/kangaroo_integrity.test.rs"
 
 [[bench]]
 name = "secp256k1_bench"
