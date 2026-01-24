@@ -1,0 +1,19 @@
+[package]
+name = "prospector-domain-ai-cortex"
+version = "1.0.0"
+edition = "2021"
+authors = ["Raz Podesta <metaShark Tech>"]
+description = "Sovereign Cognitive Stratum: Inferencia táctica y gobernanza autónoma del enjambre."
+
+[dependencies]
+prospector-domain-models = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+typeshare = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
+
+[lib]
+name = "prospector_domain_ai_cortex"
+path = "src/lib.rs"

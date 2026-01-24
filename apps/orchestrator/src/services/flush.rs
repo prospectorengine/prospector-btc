@@ -1,104 +1,98 @@
 // [apps/orchestrator/src/services/flush.rs]
 /*!
  * =================================================================
- * APARATO: TACTICAL PERSISTENCE FLUSH DAEMON (V110.2 - TYPE SECURED)
+ * APARATO: TACTICAL PERSISTENCE FLUSH DAEMON (V111.0 - RESILIENT)
  * CLASIFICACIÓN: BACKGROUND INFRASTRUCTURE SERVICE (ESTRATO L4)
- * RESPONSABILIDAD: CRISTALIZACIÓN DE LATIDOS EN EL LEDGER TÁCTICO
+ * RESPONSABILIDAD: CRISTALIZACIÓN DE LATIDOS Y RECUPERACIÓN ATÓMICA
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. TYPE SOVEREIGNTY: Inyección de anotaciones de tipo explícitas para
- *    'pending_updates_collection', erradicando riesgos de inferencia E0282.
- * 2. NOMINAL ALIGNMENT: Sincronización bit-perfecta con el método 'upsert_bulk'
- *    del WorkerRepository nivelado en el ciclo anterior.
- * 3. ATOMIC DRAIN: Implementación del patrón 'Take & Clear' para minimizar
- *    el tiempo de bloqueo del Mutex sobre el 'heartbeat_buffer'.
- * 4. HYGIENE: Erradicación total de abreviaciones y rastro de depuración ruidoso.
- *
- * # Mathematical Proof (Write-Behind Efficiency):
- * Al diferir la escritura de hilos individuales hacia ráfagas de lote cada 5s,
- * reducimos la contención de I/O en Turso en un factor de N:1, donde N es
- * el número de latidos recibidos en el intervalo.
+ * 1. EMERGENCY RE-INJECTION: Implementa el rescate de ráfagas fallidas.
+ *    Si el Motor A rechaza la persistencia, los datos vuelven al buffer.
+ * 2. LATEST-DATA INTEGRITY: Aplica lógica de paridad temporal; solo se
+ *    rescatan latidos si no ha llegado uno más nuevo durante el fallo.
+ * 3. ZERO DATA LOSS: Cierra el TODO histórico de pérdida de señal.
+ * 4. HYGIENE: Nomenclatura nominal absoluta y rastro forense.
  * =================================================================
  */
 
-use crate::state::AppState;
-use prospector_infra_db::repositories::WorkerRepository;
-use prospector_domain_models::worker::WorkerHeartbeat;
-use std::time::Duration;
-use tokio::time::{interval, MissedTickBehavior};
-use tracing::{debug, error, info, instrument};
+ use crate::state::AppState;
+ use prospector_infra_db::repositories::WorkerRepository;
+ use prospector_domain_models::worker::WorkerHeartbeat;
+ use std::time::Duration;
+ use tokio::time::{interval, MissedTickBehavior};
+ use tracing::{debug, error, info, instrument, warn};
 
-/// Intervalo nominal de sincronización con el Motor A (5 segundos).
-const PERSISTENCE_SYNC_INTERVAL_SECONDS: u64 = 5;
+ /// Intervalo nominal de sincronización con el Motor A (5 segundos).
+ const PERSISTENCE_SYNC_INTERVAL_SECONDS: u64 = 5;
 
-/**
- * Lanza el servicio de persistencia asíncrona en el reactor de Tokio.
- *
- * # Logic:
- * Orquesta un bucle infinito que monitoriza el buffer de RAM. Si detecta
- * actividad, drena los datos y ejecuta una transacción masiva en Turso.
- *
- * @param application_state Referencia compartida al estado neural del sistema.
- */
-#[instrument(skip(application_state))]
-pub async fn spawn_flush_service(application_state: AppState) {
-    let mut synchronization_timer = interval(Duration::from_secs(PERSISTENCE_SYNC_INTERVAL_SECONDS));
+ /**
+  * Lanza el servicio de persistencia asíncrona en el reactor de Tokio.
+  *
+  * # Mathematical Proof (Resilient Write-Behind):
+  * Sea B el buffer de RAM y T el Ledger Táctico.
+  * El sistema garantiza que ∀ h ∈ B, h ∉ T ⟹ h_retry ∈ B',
+  * donde B' es el estado del buffer en el siguiente tick.
+  */
+ #[instrument(skip(application_state))]
+ pub async fn spawn_flush_service(application_state: AppState) {
+     let mut synchronization_timer = interval(Duration::from_secs(PERSISTENCE_SYNC_INTERVAL_SECONDS));
+     synchronization_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-    // Configuramos el timer para ignorar ticks perdidos ante congestión de CPU,
-    // priorizando la frescura de los datos sobre la cantidad de ejecuciones.
-    synchronization_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
+     let worker_repository_engine = WorkerRepository::new(application_state.database_client.clone());
 
-    // Inicialización del repositorio táctico inyectando el cliente del AppState.
-    let worker_repository_engine = WorkerRepository::new(application_state.database_client.clone());
+     tokio::spawn(async move {
+         info!("💾 [FLUSH_DAEMON]: Resilient persistence strata V111.0 operational.");
 
-    tokio::spawn(async move {
-        info!("💾 [FLUSH_DAEMON]: Tactical persistence engine V110.2 operational.");
+         loop {
+             synchronization_timer.tick().await;
 
-        loop {
-            synchronization_timer.tick().await;
+             // --- FASE 1: DRENAJE ATÓMICO ---
+             let pending_updates_collection: Vec<WorkerHeartbeat> = {
+                 match application_state.heartbeat_buffer.lock() {
+                     Ok(mut buffer_exclusive_guard) => {
+                         if buffer_exclusive_guard.is_empty() { continue; }
+                         buffer_exclusive_guard.drain().map(|(_, data)| data).collect()
+                     }
+                     Err(lock_poison_fault) => {
+                         error!("💀 [FLUSH_FATAL]: Memory strata poisoned: {}", lock_poison_fault);
+                         break;
+                     }
+                 }
+             };
 
-            // --- FASE 1: DRENAJE ATÓMICO (MEMORY STRATA) ---
-            // Extraemos los latidos del buffer de alta frecuencia bajo protección de cerrojo.
-            let pending_updates_collection: Vec<WorkerHeartbeat> = {
-                match application_state.heartbeat_buffer.lock() {
-                    Ok(mut buffer_exclusive_guard) => {
-                        if buffer_exclusive_guard.is_empty() {
-                            continue;
-                        }
-                        // Transferencia de propiedad: Vaciamos el mapa y movemos los datos al vector local.
-                        // Esto libera el Mutex inmediatamente para permitir que los hilos de la API sigan escribiendo.
-                        buffer_exclusive_guard
-                            .drain()
-                            .map(|(_, worker_heartbeat_data)| worker_heartbeat_data)
-                            .collect()
-                    }
-                    Err(lock_poison_fault) => {
-                        error!("❌ [FLUSH_CRITICAL_FAULT]: Heartbeat buffer lock poisoned: {}", lock_poison_fault);
-                        // En caso de envenenamiento, el hilo debe abortar para prevenir estados inconsistentes.
-                        break;
-                    }
-                }
-            };
+             let records_volume = pending_updates_collection.len();
+             debug!("💾 [FLUSH_EXECUTION]: Persisting {} node heartbeats...", records_volume);
 
-            let pending_records_volume = pending_updates_collection.len();
-            debug!("💾 [FLUSH_EXECUTION]: Initiating ráfaga for {} node updates...", pending_records_volume);
+             // --- FASE 2: CRISTALIZACIÓN ---
+             match worker_repository_engine.upsert_bulk(pending_updates_collection.clone()).await {
+                 Ok(_) => {
+                     debug!("✅ [FLUSH_SUCCESS]: Secured {} records in Tactical Ledger.", records_volume);
+                 }
+                 Err(persistence_fault) => {
+                     error!("⚠️ [FLUSH_REJECTED]: Tactical link failure: {}. Firing Rescue Protocol.", persistence_fault);
 
-            // --- FASE 2: CRISTALIZACIÓN (IO STRATA) ---
-            // Ejecución de la transacción masiva en el Motor A (Turso).
-            match worker_repository_engine.upsert_bulk(pending_updates_collection).await {
-                Ok(crystallized_records_count) => {
-                    if crystallized_records_count > 0 {
-                        debug!("✅ [FLUSH_SUCCESS]: {} records secured in Tactical Ledger.", crystallized_records_count);
-                    }
-                }
-                Err(persistence_fault) => {
-                    error!(
-                        "⚠️  [FLUSH_REJECTED]: Strata synchronization failed: {}. Potential signal loss.",
-                        persistence_fault
-                    );
-                    // TODO: Implementar re-inyección en buffer de emergencia si la persistencia falla.
-                }
-            }
-        }
-    });
-}
+                     // --- FASE 3: PROTOCOLO DE RESCATE (RE-INJECTION) ---
+                     // Re-insertamos los datos fallidos para que el siguiente tick lo intente de nuevo.
+                     match application_state.heartbeat_buffer.lock() {
+                         Ok(mut buffer_rescue_guard) => {
+                             for heartbeat in pending_updates_collection {
+                                 let worker_id = heartbeat.worker_id.clone();
+
+                                 // Estrategia "Last-Write-Wins":
+                                 // Solo re-inyectamos si no hay un latido más reciente ya en el buffer.
+                                 let should_rescue = buffer_rescue_guard.get(&worker_id)
+                                     .map_or(true, |existing| heartbeat.timestamp > existing.timestamp);
+
+                                 if should_rescue {
+                                     buffer_rescue_guard.insert(worker_id, heartbeat);
+                                 }
+                             }
+                             warn!("♻️ [RESCUE_COMPLETE]: {} records returned to RAM buffer.", records_volume);
+                         }
+                         Err(e) => error!("💀 [RESCUE_CRITICAL]: Failed to acquire lock for re-injection: {}", e),
+                     }
+                 }
+             }
+         }
+     });
+ }

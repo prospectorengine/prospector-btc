@@ -1,171 +1,217 @@
 // [libs/infra/db-turso/src/repositories/gamification.rs]
 /*!
  * =================================================================
- * APARATO: NEXUS GAMIFICATION REPOSITORY (V1.3 - OWNERSHIP SECURED)
+ * APARATO: GAMIFICATION TACTICAL REPOSITORY (V17.0 - SINGULARITY GOLD)
  * CLASIFICACIÓN: INFRASTRUCTURE ADAPTER (ESTRATO L3)
- * RESPONSABILIDAD: GESTIÓN DE PRESTIGIO Y PERSISTENCIA DE XP TÁCTICO
+ * RESPONSABILIDAD: GESTIÓN DE PRESTIGIO Y ESTATUS MULTI-TENANT SOBERANO
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. BORROW CHECKER ALIGNMENT: Resolución definitiva del error E0382.
- *    Sincroniza el ciclo de vida de 'outbox_unique_identifier' mediante
- *    el uso estratégico de referencias en el rastro de depuración.
- * 2. HYGIENE ABSOLUTA: Erradicación de los imports 'info' y 'error' no
- *    utilizados, eliminando ruidos en el log de compilación.
- * 3. DOMAIN CONSISTENCY: Enlace bit-perfecto con 'OperatorRank' y
- *    'AchievementBadge' del estrato L2 (Gamification Domain).
- * 4. NOMINAL PURITY: Mantenimiento de nomenclatura descriptiva absoluta
- *    en cada transición del Ledger Táctico.
+ * 1. XP ATOMIC SEAL: Garantiza que la ganancia de experiencia sea una
+ *    operación indivisible vinculada al identificador del operador.
+ * 2. NEXUS CACHE SYNC: Optimiza la lectura de rango mediante el uso de
+ *    claves nominales en 'system_state', evitando JOINs costosos en el Hot-Path.
+ * 3. ACADEMY LINKAGE: Sincronización bit-perfecta con el progreso de la
+ *    Academia para la liberación de insignias de mérito (Badges).
+ * 4. NOMINAL PURITY: Erradicación total de abreviaciones. Uso de
+ *    'operator_identifier' y 'computational_effort_volume'.
  *
  * # Mathematical Proof (Experience Linearity):
- * El aparato garantiza la atomicidad de la ganancia de prestigio mediante
- * el sellado previo en el Outbox Táctico. La relación Hashes -> XP es
- * inmutable hasta que el 'SovereignRelayService' certifique la entrega al HQ.
+ * XP_delta = Effort_Volume * Stratum_Multiplier.
+ * El sistema garantiza que XP_total = sum(XP_delta) + Initial_XP.
  * =================================================================
  */
 
-use crate::errors::DbError;
-use crate::TursoClient;
-use libsql::params;
-use prospector_domain_gamification::{OperatorRank, AchievementBadge};
-use chrono::Utc;
-use uuid::Uuid;
-use tracing::{instrument, debug};
-use serde_json::json;
+ use crate::errors::DbError;
+ use crate::TursoClient;
+ use libsql::params;
+ use prospector_domain_gamification::{OperatorRank, AchievementBadge};
+ use chrono::Utc;
+ use uuid::Uuid;
+ use tracing::{instrument, debug, info, error};
+ use serde_json::json;
 
-/// Identificador nominal del estrato de gamificación en el Outbox.
-const NEXUS_STRATUM_IDENTIFIER: &str = "NEXUS_XP_GAIN";
+ /// Identificador nominal del estrato de gamificación en el Outbox Táctico.
+ const NEXUS_STRATUM_IDENTIFIER: &str = "NEXUS_XP_GAIN";
 
-/// Repositorio especializado en la persistencia del estatus y reputación del operador.
-pub struct GamificationRepository {
-    /// Cliente táctico para el enlace con el cluster de Turso (Motor A).
-    database_client: TursoClient,
-}
+ /// Factor de conversión: 1 XP por cada 10,000 hashes procesados (Base Satoshi).
+ const COMPUTATIONAL_EFFORT_XP_RATIO: f64 = 0.0001;
 
-impl GamificationRepository {
-    /**
-     * Construye una nueva instancia del repositorio Nexus inyectando el cliente táctico.
-     */
-    pub fn new(client: TursoClient) -> Self {
-        Self { database_client: client }
-    }
+ /// Repositorio especializado en la persistencia del prestigio y la maestría.
+ pub struct GamificationRepository {
+     /// Cliente táctico para el enlace con el cluster de Turso (Motor A).
+     database_client: TursoClient,
+ }
 
-    /**
-     * Transforma el esfuerzo computacional certificado en un evento de prestigio.
-     *
-     * # Errors:
-     * - `DbError::QueryError`: Si el sustrato 'outbox_strategic' es inalcanzable.
-     *
-     * # Performance:
-     * Operación O(1). Utiliza serialización JSONB para flexibilidad en el Motor B.
-     */
-    #[instrument(skip(self, operator_identifier, computational_effort_volume, mission_identifier))]
-    pub async fn record_computational_prestige(
-        &self,
-        operator_identifier: &str,
-        computational_effort_volume: u64,
-        mission_identifier: &str
-    ) -> Result<(), DbError> {
-        let database_connection = self.database_client.get_connection()?;
+ impl GamificationRepository {
+     /**
+      * Construye una nueva instancia del repositorio Nexus inyectando el cliente de enlace.
+      */
+     pub fn new(client: TursoClient) -> Self {
+         Self { database_client: client }
+     }
 
-        let outbox_unique_identifier = Uuid::new_v4().to_string();
+     /**
+      * Registra el prestigio derivado de una ráfaga computacional certificada.
+      *
+      * # Errors:
+      * - `DbError::QueryError`: Si el enlace con el Ledger Táctico se interrumpe.
+      *
+      * # Performance:
+      * Operación O(1). Utiliza el Patrón Outbox para diferir la sincronía con Motor B.
+      */
+     #[instrument(skip(self, operator_identifier, computational_effort_volume, mission_identifier))]
+     pub async fn record_computational_prestige(
+         &self,
+         operator_identifier: &str,
+         computational_effort_volume: u64,
+         mission_identifier: &str
+     ) -> Result<(), DbError> {
+         let database_connection = self.database_client.get_connection()?;
 
-        // 1. CONSTRUCCIÓN DEL ARTEFACTO DE PRESTIGIO
-        let prestige_payload_artifact = json!({
-            "operator_id": operator_identifier,
-            "hashes_audited": computational_effort_volume,
-            "mission_id": mission_identifier,
-            "conversion_ratio": 0.0001, // 1 XP por cada 10k hashes nominales
-            "timestamp": Utc::now().to_rfc3339()
-        });
+         // Generación de identificador unívoco para rastro forense
+         let unique_outbox_identifier = Uuid::new_v4().to_string();
 
-        // ✅ RESOLUCIÓN E0382: Logueamos ANTES de entregar la propiedad a params![]
-        // O utilizamos una referencia para evitar el 'move' prematuro.
-        debug!("🏆 [NEXUS_OUTBOX]: prestige_gain_queued identifier=[{}] operator=[{}]",
-            &outbox_unique_identifier, operator_identifier);
+         // 1. CÁLCULO DE MAGNITUD DE PRESTIGIO
+         let experience_points_gain = (computational_effort_volume as f64 * COMPUTATIONAL_EFFORT_XP_RATIO).max(1.0);
 
-        let sql_statement = "
-            INSERT INTO outbox_strategic (outbox_identifier, payload_json, target_stratum, status)
-            VALUES (?1, ?2, ?3, 'pending')
-        ";
+         // 2. CONSTRUCCIÓN DEL ARTEFACTO DE PRESTIGIO (L7 Alignment)
+         let prestige_payload_artifact = json!({
+             "operator_id": operator_identifier,
+             "hashes_audited_volume": computational_effort_volume,
+             "mission_reference_id": mission_identifier,
+             "experience_points_gain": experience_points_gain,
+             "crystallized_at_utc": Utc::now().to_rfc3339()
+         });
 
-        // 2. SELLO EN EL LEDGER TÁCTICO (OWNERSHIP MOVE)
-        database_connection.execute(sql_statement, params![
-            outbox_unique_identifier,
-            prestige_payload_artifact.to_string(),
-            NEXUS_STRATUM_IDENTIFIER
-        ]).await?;
+         // ✅ SINCRO V17.0: Se usa referencia para el log para evitar el 'move' del identificador
+         debug!(
+             target: "nexus_audit",
+             identifier = %unique_outbox_identifier,
+             operator = %operator_identifier,
+             "🏆 [NEXUS]: Queuing XP gain for certified mission effort."
+         );
 
-        Ok(())
-    }
+         let sql_statement = "
+             INSERT INTO outbox_strategic (outbox_identifier, payload_json, target_stratum, status)
+             VALUES (?1, ?2, ?3, 'pending')
+         ";
 
-    /**
-     * Recupera el rango y maestría del operador desde el caché local.
-     *
-     * # Performance:
-     * Operación indexada O(1) sobre la tabla de estado del sistema.
-     */
-    #[instrument(skip(self, operator_identifier))]
-    pub async fn get_operator_rank(&self, operator_identifier: &str) -> Result<OperatorRank, DbError> {
-        let database_connection = self.database_client.get_connection()?;
+         // 3. PERSISTENCIA EN EL OUTBOX TÁCTICO
+         database_connection.execute(sql_statement, params![
+             unique_outbox_identifier,
+             prestige_payload_artifact.to_string(),
+             NEXUS_STRATUM_IDENTIFIER
+         ]).await?;
 
-        let sql_query = "
-            SELECT value_text, value_int
-            FROM system_state
-            WHERE key = ?1
-        ";
+         Ok(())
+     }
 
-        let rank_cache_key = format!("rank_{}", operator_identifier);
-        let mut query_results = database_connection.query(sql_query, params![rank_cache_key]).await?;
+     /**
+      * Recupera el rango, nivel y puntos acumulados desde el caché de estado local.
+      *
+      * # Mathematical Proof (Level Thresholds):
+      * Level = floor(XP / 1000) + 1. El umbral para L+1 es siempre (Level * 1000).
+      */
+     #[instrument(skip(self, operator_identifier))]
+     pub async fn get_operator_rank(&self, operator_identifier: &str) -> Result<OperatorRank, DbError> {
+         let database_connection = self.database_client.get_connection()?;
+         let rank_cache_key_artifact = format!("rank_{}", operator_identifier);
 
-        if let Some(data_row) = query_results.next().await? {
-            let rank_title_label: String = data_row.get(0)?;
-            let total_experience_points: i64 = data_row.get(1)?;
+         let sql_query = "
+             SELECT value_text, value_int
+             FROM system_state
+             WHERE key = ?1
+         ";
 
-            Ok(OperatorRank {
-                level: (total_experience_points / 1000) as u32 + 1,
-                title: rank_title_label,
-                experience_points: total_experience_points as u64,
-                next_level_threshold: (((total_experience_points / 1000) + 1) * 1000) as u64,
-            })
-        } else {
-            // Sello de Operador Novato (Génesis)
-            Ok(OperatorRank {
-                level: 1,
-                title: "Novice_Archaeologist".to_string(),
-                experience_points: 0,
-                next_level_threshold: 1000,
-            })
-        }
-    }
+         let mut query_results = database_connection.query(sql_query, params![rank_cache_key_artifact]).await?;
 
-    /**
-     * Recupera insignias de logro vinculando la academia con la reputación.
-     */
-    #[instrument(skip(self, operator_identifier))]
-    pub async fn fetch_unlocked_achievements(
-        &self,
-        operator_identifier: &str
-    ) -> Result<Vec<AchievementBadge>, DbError> {
-        let database_connection = self.database_client.get_connection()?;
+         if let Some(data_row) = query_results.next().await? {
+             let rank_title_label: String = data_row.get(0)?;
+             let total_experience_points_int: i64 = data_row.get(1)?;
+             let total_xp = total_experience_points_int as u64;
 
-        let sql_query = "
-            SELECT module_identifier, completed_at
-            FROM academy_progress
-            WHERE operator_id = ?1 AND status = 'completed'
-        ";
+             let current_level = (total_xp / 1000) as u32 + 1;
+             let next_threshold = (current_level as u64) * 1000;
 
-        let mut query_results = database_connection.query(sql_query, params![operator_identifier]).await?;
-        let mut achievements_collection = Vec::new();
+             Ok(OperatorRank {
+                 level: current_level,
+                 title: rank_title_label,
+                 experience_points: total_xp,
+                 next_level_threshold: next_threshold,
+             })
+         } else {
+             // Sello de Operador Génesis (Estado por defecto)
+             Ok(OperatorRank {
+                 level: 1,
+                 title: "Novice_Archaeologist".to_string(),
+                 experience_points: 0,
+                 next_level_threshold: 1000,
+             })
+         }
+     }
 
-        while let Some(data_row) = query_results.next().await? {
-            let module_id: String = data_row.get(0)?;
-            achievements_collection.push(AchievementBadge {
-                identifier: module_id.clone(),
-                i18n_label_key: format!("ACHIEVEMENT_{}", module_id),
-                unlocked_at: data_row.get(1)?,
-            });
-        }
+     /**
+      * Recupera la colección de insignias de arqueología certificadas para el operador.
+      * Cruza el Ledger Táctico con las certificaciones de la Academia L2.
+      */
+     #[instrument(skip(self, operator_identifier))]
+     pub async fn fetch_certified_achievements(
+         &self,
+         operator_identifier: &str
+     ) -> Result<Vec<AchievementBadge>, DbError> {
+         let database_connection = self.database_client.get_connection()?;
 
-        Ok(achievements_collection)
-    }
-}
+         let sql_query = "
+             SELECT module_identifier, completed_at
+             FROM academy_progress
+             WHERE operator_id = ?1 AND status = 'completed'
+             ORDER BY completed_at DESC
+         ";
+
+         let mut query_results = database_connection.query(sql_query, params![operator_identifier]).await?;
+         let mut achievements_collection = Vec::new();
+
+         while let Some(data_row) = query_results.next().await? {
+             let module_identifier_label: String = data_row.get(0)?;
+             let completion_timestamp: String = data_row.get(1)?;
+
+             achievements_collection.push(AchievementBadge {
+                 identifier: module_identifier_label.clone(),
+                 i18n_label_key: format!("ACHIEVEMENT_{}", module_identifier_label),
+                 unlocked_at: completion_timestamp,
+             });
+         }
+
+         debug!("🎖️ [NEXUS]: Found {} certified achievements for {}.",
+             achievements_collection.len(), operator_identifier);
+
+         Ok(achievements_collection)
+     }
+
+     /**
+      * Sincroniza el estatus de rango local tras una recalibración en el Motor B.
+      */
+     pub async fn synchronize_rank_cache(
+         &self,
+         operator_identifier: &str,
+         rank_label: &str,
+         total_xp: u64
+     ) -> Result<(), DbError> {
+         let database_connection = self.database_client.get_connection()?;
+         let rank_cache_key = format!("rank_{}", operator_identifier);
+
+         database_connection.execute(
+             "INSERT INTO system_state (key, value_text, value_int, updated_at)
+              VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)
+              ON CONFLICT(key) DO UPDATE SET
+                 value_text = excluded.value_text,
+                 value_int = excluded.value_int,
+                 updated_at = CURRENT_TIMESTAMP",
+             params![rank_cache_key, rank_label, total_xp as i64]
+         ).await?;
+
+         info!("🏆 [NEXUS_SYNC]: Rank solidified for {}: [{}] ({} XP)",
+             operator_identifier, rank_label, total_xp);
+         Ok(())
+     }
+ }

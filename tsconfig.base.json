@@ -33,7 +33,8 @@
       "@prospector/ui-content": ["libs/features/content-ui/src/index.ts"],
       "@prospector/ui-gamification": ["libs/features/gamification-ui/src/index.ts"],
       "@prospector/ui-notifications": ["libs/features/notifications-ui/src/index.ts"],
-      "@prospector/ui-social": ["libs/features/social-ui/src/index.ts"]
+      "@prospector/ui-social": ["libs/features/social-ui/src/index.ts"],
+      "@prospector/domain-ai-cortex": ["libs/domain/ai-cortex/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist", ".next"]

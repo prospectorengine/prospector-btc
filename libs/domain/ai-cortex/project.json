@@ -1,0 +1,11 @@
+{
+    "name": "domain-ai-cortex",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
+    "sourceRoot": "libs/domain/ai-cortex/src",
+    "targets": {
+      "lint": { "executor": "@monodon/rust:lint" },
+      "test": { "executor": "@monodon/rust:test" }
+    },
+    "tags": ["layer:domain", "type:logic", "scope:ai"]
+  }

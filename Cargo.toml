@@ -47,7 +47,8 @@ members = [
     "libs/domain/notification",
     "libs/domain/gamification",
     "libs/domain/content",
-    "libs/domain/social"
+    "libs/domain/social",
+    "libs/domain/ai-cortex"
 ]
 
 exclude = [
@@ -86,6 +87,7 @@ prospector-infra-transport = { path = "libs/infra/transport" }
 prospector-infra-worker-client = { path = "libs/infra/worker-client" }
 prospector-blockchain-client = { path = "libs/infra/blockchain-client" }
 prospector-shared-heimdall = { path = "libs/shared/heimdall" }
+prospector-domain-ai-cortex = { path = "libs/domain/ai-cortex" }
 
 # --- ESTRATO EXTERNO: RUNTIME & NETWORKING ---
 tokio = { version = "1.49", features = ["full"] }

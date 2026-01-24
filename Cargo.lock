@@ -2838,6 +2838,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "prospector-domain-ai-cortex"
+version = "1.0.0"
+dependencies = [
+ "chrono",
+ "prospector-domain-models",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+ "typeshare",
+]
+
+[[package]]
 name = "prospector-domain-billing"
 version = "0.1.0"
 dependencies = [

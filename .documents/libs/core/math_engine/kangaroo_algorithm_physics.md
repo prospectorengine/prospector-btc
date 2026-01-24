@@ -1,12 +1,16 @@
-# 📘 CONCEPTO: ALGORITMO KANGAROO (POLLARD'S LAMBDA)
+# 📘 CONCEPTO: KANGAROO SOLVER (POLLARD'S LAMBDA)
 
-**Módulo Objetivo:** `KangarooSolver` (L1)
+**Clasificación:** SOLUCIONADOR ECDLP (ESTRATO L1)
+**Misión:** V22.0 - Resolución de Rango Corto
 
-## 1. Física del Problema
-A diferencia del barrido secuencial, que es $O(n)$, el algoritmo de los Canguros de Pollard busca resolver el Problema del Logaritmo Discreto (ECDLP) en un tiempo $O(\sqrt{w})$, donde $w$ es el ancho del rango. Es ideal para misiones donde se conoce que una clave pertenece a un segmento específico de la curva.
+## 1. La Física del Problema
+A diferencia del barrido secuencial ($O(N)$), el algoritmo Kangaroo está diseñado para encontrar un escalar $k$ si sabemos que reside en un intervalo $[A, B]$. Su complejidad es $O(\sqrt{B-A})$, lo que lo hace exponencialmente más rápido para búsquedas dirigidas.
 
-## 2. Sincronía Galvánica (V19.1)
-El motor ha sido nivelado para utilizar la aritmética nominal `big_endian`. Esto asegura que los saltos en la curva ($P + step$) se calculen con precisión de 256 bits sin errores de acarreo o de nomenclatura.
+## 2. Mecánica de Puntos Distinguidos (DP)
+Para evitar el almacenamiento de cada paso (que agotaría la RAM de Colab), el sistema solo guarda "trampas" en puntos cuyas coordenadas cumplen con un predicado matemático (Máscara de bits).
+- **Trayectoria Tame:** Salta desde el final del rango conocido y deja trampas.
+- **Trayectoria Wild:** Salta desde el punto objetivo $Q$ buscando caer en una trampa.
 
-## 3. Estrategia de Puntos Distinguidos (DP)
-Para optimizar la memoria en el Orquestador, no guardamos todos los saltos del canguro "Tame", solo aquellos cuyas coordenadas cumplen con una máscara de bits (`distinguished_point_mask`). Esto permite que el enjambre distribuido trabaje con trampas de solo unos pocos megabytes en RAM.
+## 3. Optimización Gold Master V22
+- **Static Signatures:** El uso de `[u8; 33]` para las llaves del mapa elimina el overhead del puntero y la alocación dinámica, permitiendo que la CPU se dedique exclusivamente a la aritmética de la curva.
+- **SipHash Routing:** Aunque el selector de salto es determinista, la distribución de la matriz asegura una cobertura estocástica del espacio de claves, previniendo ciclos infinitos.

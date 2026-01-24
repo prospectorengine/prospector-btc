@@ -259,3 +259,13 @@ Higiene de Tesis: Se eliminarán todos los placeholders actuales. Los avatares, 
 
 ---
 
+📋 TODO: ROADMAP HACIA LA SINGULARIDAD (V17.0)
+Basado en mi revisión, este es el orden de ejecución para el cierre de la Fase 2:
+[ ] Cierre de Rutas (L3): Inyectar físicamente las rutas de Snapshot y Proving Grounds en routes.rs.
+[ ] Middleware de Identidad (L4): Refactorizar el auth_guard para extraer el user_id de la sesión y pasarlo al AppState de forma dinámica.
+[ ] Luno Forensic Iterator (L2): Desarrollar la lógica real de semillas basadas en tiempo para la vulnerabilidad de Blockchain.info 2014.
+[ ] AI Cortex Initialization (L9): Empezar la construcción del domain-ai-cortex para que Gemini pueda leer los logs del Panóptico.
+
+---
+
+
