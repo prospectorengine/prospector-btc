@@ -1,0 +1,6 @@
+{
+  "timestamp": "2026-01-24T17:36:10.908Z",
+  "status": "OPERATIONAL",
+  "latency_ms": 3621,
+  "endpoint": "libsql://prospector-btc-prospectorengine.aws-us-west-2.turso.io"
+}

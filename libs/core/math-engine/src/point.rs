@@ -4,25 +4,17 @@
 
 /*!
  * =================================================================
- * APARATO: GEOMETRIC POINT ENGINE (V64.0 - STATIC LUT ENABLED)
+ * APARATO: GEOMETRIC POINT ENGINE (V64.1 - NOMINAL SYNCED)
  * CLASIFICACIÓN: CORE MATH (ESTRATO L1)
  * RESPONSABILIDAD: GESTIÓN DE PUNTOS PROYECTIVOS Y DERIVACIÓN O(1)
  *
  * VISION HIPER-HOLÍSTICA 2026:
- * 1. STATIC LUT INTEGRATION: Implementa el acceso real a la tabla de
- *    ventana de base fija (GENERATOR_TABLE), eliminando la simulación
- *    dinámica de la versión V63.3.
- * 2. QUANTUM DERIVATION: Optimización del motor 'from_private_scalar_windowed'
- *    mediante la reducción de 256 duplicaciones Jacobianas a 64 adiciones mixtas.
- * 3. NOMINAL PURITY: Erradicación total de abreviaciones. 'ax' -> 'affine_x',
- *    'res' -> 'result_point', 'sk' -> 'private_key_handle'.
- * 4. HYGIENE: Documentación técnica MIT completa para cada método público.
- *
- * # Mathematical Proof (Jacobian Projection):
- * El sistema opera en el espacio proyectivo Jacobian $(X, Y, Z)$ que mapea
- * al plano afín $(x, y)$ de Bitcoin mediante $x = X \cdot Z^{-2} \pmod p$.
- * Esta arquitectura permite que la ley de grupo (adición/duplicación) sea
- * una función de multiplicaciones de campo, difiriendo la inversión modular.
+ * 1. NOMINAL ALIGNMENT: Sincronización bit-perfecta con 'generator_table.rs' V1.4.
+ *    Resuelve E0609 mediante el uso de 'x_limbs' y 'y_limbs'.
+ * 2. QUANTUM DERIVATION: Implementa la multiplicación escalar de base fija
+ *    reduciendo 256 duplicaciones a 64 adiciones de tabla.
+ * 3. ZERO ABBREVIATIONS: Erradicación total de 'ax', 'res', 'sk'.
+ * 4. HYGIENE: RustDoc MIT completo y rastro forense #[instrument].
  * =================================================================
  */
 
@@ -30,13 +22,10 @@ use crate::field::FieldElement;
 use crate::errors::MathError;
 use crate::private_key::SafePrivateKey;
 use crate::curve::UnifiedCurveEngine;
-// ✅ SINCRO SOBERANA: Importación de la tabla pre-computada de 960 puntos
 use crate::generator_table::GENERATOR_TABLE;
 use tracing::{instrument, trace};
 
 /// Representa un punto en la curva secp256k1 utilizando coordenadas Jacobianas.
-///
-/// El elemento identidad (Punto al Infinito) se representa mediante el flag `is_infinity`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct JacobianPoint {
     /// Coordenada X en el espacio proyectivo.
@@ -53,12 +42,9 @@ impl JacobianPoint {
     /**
      * Construye un punto Jacobiano a partir de componentes afines (Z = 1).
      *
-     * # Mathematical Proof
-     * Al fijar Z = 1, el punto proyectivo reside inicialmente en el plano afín,
-     * facilitando las adiciones mixtas subsiguientes en el motor secuencial.
-     *
-     * @param x_raw_limbs Palabras de 64 bits para la coordenada X.
-     * @param y_raw_limbs Palabras de 64 bits para la coordenada Y.
+     * # Mathematical Proof:
+     * Al fijar Z = 1, el punto reside inicialmente en el plano afín de Bitcoin,
+     * permitiendo adiciones mixtas optimizadas de 8 multiplicaciones (8M).
      */
     #[inline(always)]
     #[must_use]
@@ -72,9 +58,7 @@ impl JacobianPoint {
     }
 
     /**
-     * Punto de entrada de alto nivel para la derivación de clave pública.
-     *
-     * @param private_key_handle Instancia validada de la clave privada (L1-L2 Bridge).
+     * Punto de entrada de alto nivel para la derivación de clave pública (Q = kG).
      */
     #[inline(always)]
     #[must_use]
@@ -84,31 +68,29 @@ impl JacobianPoint {
     }
 
     /**
-     * IGNICIÓN CUÁNTICA: Multiplicación de Base Fija mediante Ventana de 4 bits.
+     * Derivación Escalar Maestra mediante Ventana Fija de 4 bits.
      *
-     * # Mathematical Proof
-     * Divide el escalar de 256 bits en 64 ventanas de 4 bits (nibbles).
-     * El punto resultante se calcula como la suma de 64 términos pre-computados:
-     * $Q = \sum_{i=0}^{63} [v_i] \cdot (16^i \cdot G)$
+     * # Mathematical Proof:
+     * Divide el escalar de 256 bits en 64 nibbles. El punto resultante es la 
+     * suma de los puntos pre-computados en la matriz de silicio:
+     * Q = sum(GENERATOR_TABLE[nibble_index][nibble_value]).
      *
-     * # Performance
-     * Operación O(1) respecto a la duplicación. Reduce el esfuerzo computacional
-     * de 256 duplicaciones + 128 adiciones a exactamente 64 adiciones de tabla.
+     * # Performance:
+     * Operación O(1) respecto al número de bits. Elimina el bottleneck 
+     * de las duplicaciones sucesivas del algoritmo 'Double-and-Add'.
      */
     #[instrument(level = "trace", skip(private_scalar_bytes_big_endian))]
     pub fn from_private_scalar_windowed(private_scalar_bytes_big_endian: &[u8; 32]) -> Self {
-        trace!("🧬 [POINT_ENGINE]: Deriving public point via Fixed-Base Windowing.");
+        trace!("🧬 [POINT_ENGINE]: Deriving public point via Fixed-Base Windowing (64 steps).");
 
         let mut point_accumulator = Self::infinity();
 
-        // Procesamos los 32 bytes del escalar (de más significativo a menos)
+        // Procesamos los 32 bytes (del más significativo al menos)
         for byte_index in 0..32 {
             let current_byte = private_scalar_bytes_big_endian[byte_index];
-
-            // Calculamos el índice base de ventana (2 ventanas por byte)
             let base_window_index = (31 - byte_index) * 2;
 
-            // 1. Ventana Baja (4 bits inferiores)
+            // 1. Procesamiento del Nibble Bajo (Bits 0-3)
             let low_nibble_value = current_byte & 0x0F;
             if low_nibble_value > 0 {
                 point_accumulator = Self::lookup_and_add_mixed(
@@ -118,7 +100,7 @@ impl JacobianPoint {
                 );
             }
 
-            // 2. Ventana Alta (4 bits superiores)
+            // 2. Procesamiento del Nibble Alto (Bits 4-7)
             let high_nibble_value = (current_byte >> 4) & 0x0F;
             if high_nibble_value > 0 {
                 point_accumulator = Self::lookup_and_add_mixed(
@@ -133,15 +115,14 @@ impl JacobianPoint {
     }
 
     /**
-     * Consulta la tabla estática y ejecuta una adición mixta (Jacobian + Affine).
+     * Consulta la matriz pre-computada y ejecuta una adición Jacobiana Mixta.
      *
      * # Performance (Elite):
-     * Al estar los puntos de la tabla en formato afín ($Z=1$), la fórmula de
-     * adición se reduce a 8 multiplicaciones de campo (8M), maximizando el hashrate.
+     * Al estar los puntos de la tabla en formato Afín (Z=1), el coste es de solo 8M.
      */
     #[inline(always)]
     fn lookup_and_add_mixed(accumulator: &Self, window_index: usize, value_index: usize) -> Self {
-        // Acceso O(1) a la memoria pre-computada
+        // ✅ RESOLUCIÓN E0609: Sincronía nominal con generator_table.rs V1.4
         let static_point_data = &GENERATOR_TABLE[window_index][value_index];
 
         let affine_x_element = FieldElement::from_limbs(static_point_data.x_limbs);
@@ -151,14 +132,14 @@ impl JacobianPoint {
     }
 
     /**
-     * Proyecta el punto Jacobiano al plano afín de Bitcoin ($X/Z^2, Y/Z^3$).
+     * Proyecta el punto Jacobiano de vuelta al plano afín de Bitcoin (x, y).
      *
-     * # Errors
-     * - `MathError::InvalidKeyFormat`: Si el punto reside en el infinito.
+     * # Mathematical Proof:
+     * x = X * Z^-2 (mod p)
+     * y = Y * Z^-3 (mod p)
      *
-     * # Performance
-     * Requiere una inversión modular costosa. Se utiliza como paso final
-     * tras el barrido secuencial o ante una detección positiva del filtro.
+     * # Errors:
+     * - Retorna 'InvalidKeyFormat' si el punto reside en el infinito.
      */
     #[instrument(level = "trace", skip(self))]
     pub fn to_affine_bytes(&self) -> Result<([u8; 32], [u8; 32]), MathError> {
@@ -169,11 +150,11 @@ impl JacobianPoint {
         // 1. Inversión modular del denominador compartido Z
         let coordinate_z_inverse = self.z.invert()?;
 
-        // 2. Cálculo de factores de proyección
+        // 2. Factores de proyección
         let z_inverse_squared = coordinate_z_inverse.square_modular();
         let z_inverse_cubed = z_inverse_squared.multiply_modular(&coordinate_z_inverse);
 
-        // 3. Extracción de coordenadas afines normalizadas
+        // 3. Extracción de coordenadas normalizadas (Big-Endian para red)
         let affine_x_bytes = self.x.multiply_modular(&z_inverse_squared).internal_words_to_big_endian_bytes();
         let affine_y_bytes = self.y.multiply_modular(&z_inverse_cubed).internal_words_to_big_endian_bytes();
 
@@ -181,7 +162,7 @@ impl JacobianPoint {
     }
 
     /**
-     * Retorna la identidad del grupo (Punto al Infinito).
+     * Retorna el elemento neutro del grupo (Identidad).
      */
     #[inline(always)]
     #[must_use]
@@ -196,9 +177,6 @@ impl JacobianPoint {
 }
 
 impl Default for JacobianPoint {
-    /**
-     * Inicializa el punto Jacobiano como el elemento neutro por defecto.
-     */
     fn default() -> Self {
         Self::infinity()
     }

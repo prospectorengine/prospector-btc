@@ -1,4 +1,3 @@
-# [libs/core/math-engine/Cargo.toml]
 [package]
 name = "prospector-core-math"
 version = "0.3.0"
@@ -7,17 +6,11 @@ authors = ["Raz Podesta <metaShark Tech>"]
 description = "Motor matemático de bajo nivel para secp256k1 con soporte de telemetría forense y ráfagas Jacobiana."
 
 [dependencies]
-# --- NÚCLEO CRIPTOGRÁFICO SOBERANO ---
 secp256k1 = { workspace = true }
 sha2 = { workspace = true }
 ripemd = "0.1"
 serde = { workspace = true }
 tracing = { workspace = true }
-
-# ✅ REPARACIÓN CRÍTICA: Se ha eliminado la dependencia inexistente 'prospector-core-math-derive'
-# que causaba el fallo 'os error 2' en el runner de GitHub Actions.
-
-# --- UTILIDADES DE ALTO RENDIMIENTO (HEAP-FREE) ---
 thiserror = { workspace = true }
 hex = { workspace = true }
 once_cell = { workspace = true }
@@ -39,84 +32,40 @@ name = "prospector_core_math"
 path = "src/lib.rs"
 
 # =================================================================
-# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V25.8 - RESIDUE FREE)
+# MATRIZ DE CERTIFICACIÓN MATEMÁTICA (V17.0 - SOBERANA)
 # =================================================================
 
 [[test]]
-name = "field_documented_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/field_documented_integrity.test.rs"
+name = "arithmetic_kernel_audit"
+path = "../../../tests/mirror/libs/core/math_engine/arithmetic_kernel_audit.rs"
 
 [[test]]
-name = "field_integrity_torture"
-path = "../../../tests/mirror/libs/core/math_engine/field_integrity_torture.test.rs"
+name = "field_strata_audit"
+path = "../../../tests/mirror/libs/core/math_engine/field_strata_audit.rs"
 
 [[test]]
-name = "field_integrity_v150"
-path = "../../../tests/mirror/libs/core/math_engine/field_integrity_v150.test.rs"
+name = "curve_geometry_audit"
+path = "../../../tests/mirror/libs/core/math_engine/curve_geometry_audit.rs"
 
 [[test]]
-name = "field_simd_isomorphism"
-path = "../../../tests/mirror/libs/core/math_engine/field_simd_isomorphism.test.rs"
+name = "scalar_modular_audit"
+path = "../../../tests/mirror/libs/core/math_engine/scalar_modular_audit.rs"
 
 [[test]]
-name = "arithmetic_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/arithmetic_integrity.test.rs"
+name = "silicon_isomorphism_audit"
+path = "../../../tests/mirror/libs/core/math_engine/silicon_isomorphism_audit.rs"
 
 [[test]]
-name = "arithmetic_sovereignty"
-path = "../../../tests/mirror/libs/core/math_engine/arithmetic_sovereignty.test.rs"
+name = "generator_lut_audit"
+path = "../../../tests/mirror/libs/core/math_engine/generator_lut_audit.rs"
 
 [[test]]
-name = "secp256k1_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity.test.rs"
+name = "kangaroo_solver_audit"
+path = "../../../tests/mirror/libs/core/math_engine/kangaroo_solver_audit.rs"
 
 [[test]]
-name = "secp256k1_integrity_v22"
-path = "../../../tests/mirror/libs/core/math_engine/secp256k1_integrity_v22.test.rs"
-
-[[test]]
-name = "curve_laws"
-path = "../../../tests/mirror/libs/core/math_engine/curve_laws.test.rs"
-
-[[test]]
-name = "public_key_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/public_key_integrity.test.rs"
-
-[[test]]
-name = "point_jacobian_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/point_jacobian_integrity.test.rs"
-
-[[test]]
-name = "point_interface"
-path = "../../../tests/mirror/libs/core/math_engine/point_interface.test.rs"
-
-[[test]]
-name = "scalar_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/scalar_integrity.test.rs"
-
-[[test]]
-name = "scalar_modular_logic"
-path = "../../../tests/mirror/libs/core/math_engine/scalar_modular_logic.test.rs"
-
-[[test]]
-name = "curve_simd_parity"
-path = "../../../tests/mirror/libs/core/math_engine/curve_simd_parity.test.rs"
-
-[[test]]
-name = "generator_table_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/generator_table_integrity.test.rs"
-
-[[test]]
-name = "kangaroo_integrity"
-path = "../../../tests/mirror/libs/core/math_engine/kangaroo_integrity.test.rs"
-
-[[test]]
-name = "hub_coherence"
-path = "../../../tests/mirror/libs/core/math_engine/hub_coherence.test.rs"
-
-[[test]]
-name = "prelude_sync"
-path = "../../../tests/mirror/libs/core/math_engine/prelude_sync.test.rs"
+name = "prelude_registry_audit"
+path = "../../../tests/mirror/libs/core/math_engine/prelude_registry_audit.rs"
 
 [[bench]]
 name = "secp256k1_bench"
